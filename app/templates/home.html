@@ -109,18 +109,24 @@
             <div class="game-row-item">
               <div class="game-row">
                 <span class="game-date">{{ game.game_date.strftime('%d/%m %H:%M') }}</span>
-                {% if game.result %}
-                  <span class="game-result"><span class="trophy">🏆</span>{{ game.team_a if game.result == 'team_a' else game.team_b }}</span>
-                {% elif gr.prediction %}
-                  <span class="pill {{ 'done' if gr.prediction.is_correct else ('locked' if gr.prediction.is_correct is none else 'wrong') }}">Pronostic : {{ game.team_a if gr.prediction.predicted_value == 'team_a' else game.team_b }}</span>
-                {% elif gr.open %}
-                  <form class="inline" method="post" action="{{ url_for('predictions.predict_game', game_id=game.id) }}">
-                    <button type="submit" name="side" value="team_a" class="secondary">{{ game.team_a }}</button>
-                    <button type="submit" name="side" value="team_b" class="secondary">{{ game.team_b }}</button>
-                  </form>
-                {% else %}
-                  <span class="pill locked">Pronostic fermé</span>
-                {% endif %}
+                <div class="game-outcome">
+                  {% if game.result %}
+                    <span class="game-result"><span class="trophy">🏆</span>{{ game.team_a if game.result == 'team_a' else game.team_b }}</span>
+                  {% endif %}
+                  {% if gr.prediction %}
+                    <span class="pill {{ 'done' if gr.prediction.is_correct else ('locked' if gr.prediction.is_correct is none else 'wrong') }}">
+                      Pronostic : {{ game.team_a if gr.prediction.predicted_value == 'team_a' else game.team_b }}
+                      {% if gr.prediction.is_correct is not none %}{{ '✓' if gr.prediction.is_correct else '✗' }}{% endif %}
+                    </span>
+                  {% elif gr.open %}
+                    <form class="inline" method="post" action="{{ url_for('predictions.predict_game', game_id=game.id) }}">
+                      <button type="submit" name="side" value="team_a" class="secondary">{{ game.team_a }}</button>
+                      <button type="submit" name="side" value="team_b" class="secondary">{{ game.team_b }}</button>
+                    </form>
+                  {% elif not game.result %}
+                    <span class="pill locked">Pronostic fermé</span>
+                  {% endif %}
+                </div>
               </div>
 
               {% if not gr.open %}
