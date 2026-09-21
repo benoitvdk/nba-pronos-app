@@ -164,6 +164,12 @@ a { color: var(--navy-light); }
 .pill.done { background: var(--success-bg); color: var(--success-text); }
 .pill.upcoming { background: #eef2ff; color: var(--navy-light); }
 .pill.locked { background: #f1f1f5; color: var(--muted); }
+.pill.wrong { background: var(--error-bg); color: var(--error-text); }
+
+/* --- Prediction outcome colors (green = correct, red = wrong, gray = pending) --- */
+.reveal-row strong.correct { color: var(--success-text); }
+.reveal-row strong.wrong { color: var(--error-text); }
+.reveal-row strong.pending { color: var(--muted); }
 
 form.inline { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.6rem; }
 

@@ -37,7 +37,10 @@ def _all_predictions(prediction_type, exclude_player_id, game_id=None, series_id
         .order_by(Player.name)
         .all()
     )
-    return [{"player_name": pred.player.name, "predicted_value": pred.predicted_value} for pred in rows]
+    return [
+        {"player_name": pred.player.name, "predicted_value": pred.predicted_value, "is_correct": pred.is_correct}
+        for pred in rows
+    ]
 
 
 @bp.route("/")
