@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Classement{% endblock %}
+{% block content %}
+  <div class="card">
+    <h3>Classement</h3>
+    {% if not rows %}
+      <p class="muted">Personne n'a encore de points.</p>
+    {% else %}
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="text-align: left; border-bottom: 2px solid #eee;">
+            <th style="padding: 0.4rem 0;">#</th>
+            <th>Joueur</th>
+            <th style="text-align: right;">Points</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr style="border-bottom: 1px solid #f0f0f0; {{ 'font-weight: 700;' if row.player.id == g.player.id }}">
+              <td style="padding: 0.4rem 0;">{{ loop.index }}</td>
+              <td>{{ row.player.name }}{{ ' (toi)' if row.player.id == g.player.id }}</td>
+              <td style="text-align: right;">{{ '%.1f' | format(row.total) }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+  </div>
+{% endblock %}
