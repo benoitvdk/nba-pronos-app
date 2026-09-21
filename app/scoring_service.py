@@ -62,9 +62,17 @@ def score_series_predictions(engine="classic"):
                     engine, cfg, pred.predicted_value, status["winner"], winner_odds=series.winner_odds
                 )
             elif pred.prediction_type == "series_score":
+                # predicted_value combines team + score (e.g. "team_b:4-2",
+                # see series_score_key) but status["score"] is only the
+                # number part (e.g. "4-2") - split it back out before
+                # comparing, and the team must match too, otherwise a
+                # right score for the wrong team would score as correct.
+                predicted_team, _, predicted_score = pred.predicted_value.partition(":")
                 is_correct, points = score_series_score(
-                    engine, cfg, pred.predicted_value, status["score"], score_odds=series.score_odds
+                    engine, cfg, predicted_score, status["score"], score_odds=series.score_odds
                 )
+                if predicted_team != status["winner"]:
+                    is_correct, points = False, 0.0
             else:
                 continue
             pred.is_correct = is_correct
