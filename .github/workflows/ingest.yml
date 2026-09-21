@@ -23,3 +23,8 @@ jobs:
           BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: python -m scripts.ingest --season 2026
+
+      - name: Run scoring
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m scripts.run_scoring --engine classic
