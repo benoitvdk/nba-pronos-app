@@ -234,6 +234,13 @@ form.inline { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; 
   color: var(--muted);
   min-width: 4.5rem;
 }
+.game-row .game-outcome {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
 .game-row .game-result { font-weight: 700; }
 .game-row .game-result .trophy { margin-right: 0.25rem; }
 .game-row form.inline { margin-top: 0; }
