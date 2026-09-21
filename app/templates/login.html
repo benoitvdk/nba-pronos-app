@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Connexion{% endblock %}
 {% block content %}
-  <h1>Connexion</h1>
-  <p>Utilise le lien qu'on t'a envoyé, ou saisis ton code ci-dessous.</p>
-  <form method="post">
-    <input type="text" name="access_code" placeholder="Ton code d'accès" autofocus required>
-    <button type="submit">Entrer</button>
-  </form>
+  <div class="login-wrap">
+    <span class="logo">🏀</span>
+    <h1>NBA Playoffs Pronos</h1>
+    <p>Utilise le lien qu'on t'a envoyé, ou saisis ton code ci-dessous.</p>
+    <form method="post">
+      <input type="text" name="access_code" placeholder="Ton code d'accès" autofocus required>
+      <button type="submit">Entrer</button>
+    </form>
+  </div>
 {% endblock %}

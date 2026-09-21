@@ -84,6 +84,21 @@ réellement testable qu'une fois les playoffs 2026 commencés.
 `add_player` (ex. `http://127.0.0.1:5000/login/<code>`) connecte directement, sans
 mot de passe.
 
+## Déploiement sur Render
+
+Déploiement via Blueprint (`render.yaml` à la racine) : sur render.com, *New +*
+→ *Blueprint* → connecter le repo GitHub → Render détecte `render.yaml` et
+propose le service `nba-playoffs-pronos`. `SECRET_KEY` est généré
+automatiquement ; `DATABASE_URL`, `ODDS_API_KEY` et `BALLDONTLIE_API_KEY`
+sont à renseigner manuellement dans le dashboard Render (mêmes valeurs que
+dans `.env` local).
+
+Le plan gratuit Render met le service en veille après 15 minutes d'inactivité
+(premier chargement suivant : 30 à 60 secondes de réveil). Pour que le cron
+d'ingestion GitHub Actions fonctionne, ajouter les mêmes 3 secrets
+(`DATABASE_URL`, `BALLDONTLIE_API_KEY`, `ODDS_API_KEY`) dans les secrets
+Actions du repo GitHub (pas les variables).
+
 ## Utilisation (frontend)
 
 Une fois connecté via son lien, chaque joueur arrive sur `/` (tableau de bord) :
@@ -143,6 +158,7 @@ tests/
   test_web.py        tests des routes web (pronostics, classement, bracket)
 .github/workflows/
   ingest.yml       cron GitHub Actions (gratuit) pour l'ingestion automatique
+render.yaml        Blueprint Render (service web + variables d'environnement)
 wsgi.py            point d'entrée pour gunicorn / Render
 ```
 
@@ -153,5 +169,5 @@ wsgi.py            point d'entrée pour gunicorn / Render
 - [x] Moteurs de scoring (classique + basé sur les cotes)
 - [x] Script d'ingestion automatique (résultats + cotes)
 - [x] Frontend PWA (pronostics, classement, bracket, installable hors-ligne)
-- [ ] Déploiement sur Render
+- [x] Déploiement sur Render
 - [ ] Nettoyage des séries de test avant la vraie saison 2026-27

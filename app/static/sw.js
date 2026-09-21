@@ -2,9 +2,10 @@
 // d'accueil) et un cache léger. Les pages de pronostics changent souvent, donc
 // on privilégie le réseau (network-first) et on ne retombe sur le cache que
 // hors-ligne, avec une page de repli simple pour la navigation.
-const CACHE_NAME = "nba-pronos-v1";
+const CACHE_NAME = "nba-pronos-v2";
 const APP_SHELL = [
   "/static/manifest.json",
+  "/static/css/style.css",
   "/static/icons/icon-192.png",
   "/static/icons/icon-512.png",
   "/static/offline.html",

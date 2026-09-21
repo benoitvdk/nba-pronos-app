@@ -4,22 +4,47 @@
   <div class="card">
     <h3>Classement</h3>
     {% if not rows %}
-      <p class="muted">Personne n'a encore de points.</p>
+      <div class="empty-state">
+        <span class="emoji">🏀</span>
+        Personne n'a encore de points.
+      </div>
     {% else %}
-      <table style="width: 100%; border-collapse: collapse;">
+      <div class="podium">
+        {% if rows|length > 1 %}
+        <div class="spot second">
+          <span class="medal">🥈</span>
+          <div class="name">{{ rows[1].player.name }}</div>
+          <div class="pts">{{ '%.1f' | format(rows[1].total) }} pts</div>
+        </div>
+        {% endif %}
+        <div class="spot first">
+          <span class="medal">🥇</span>
+          <div class="name">{{ rows[0].player.name }}</div>
+          <div class="pts">{{ '%.1f' | format(rows[0].total) }} pts</div>
+        </div>
+        {% if rows|length > 2 %}
+        <div class="spot third">
+          <span class="medal">🥉</span>
+          <div class="name">{{ rows[2].player.name }}</div>
+          <div class="pts">{{ '%.1f' | format(rows[2].total) }} pts</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <table class="leaderboard">
         <thead>
-          <tr style="text-align: left; border-bottom: 2px solid #eee;">
-            <th style="padding: 0.4rem 0;">#</th>
+          <tr>
+            <th>#</th>
             <th>Joueur</th>
-            <th style="text-align: right;">Points</th>
+            <th class="num">Points</th>
           </tr>
         </thead>
         <tbody>
           {% for row in rows %}
-            <tr style="border-bottom: 1px solid #f0f0f0; {{ 'font-weight: 700;' if row.player.id == g.player.id }}">
-              <td style="padding: 0.4rem 0;">{{ loop.index }}</td>
+            <tr class="{{ 'me' if row.player.id == g.player.id }}">
+              <td>{{ loop.index }}</td>
               <td>{{ row.player.name }}{{ ' (toi)' if row.player.id == g.player.id }}</td>
-              <td style="text-align: right;">{{ '%.1f' | format(row.total) }}</td>
+              <td class="num">{{ '%.1f' | format(row.total) }}</td>
             </tr>
           {% endfor %}
         </tbody>
