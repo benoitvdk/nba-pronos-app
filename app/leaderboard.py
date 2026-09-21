@@ -74,7 +74,7 @@ def player_profile(player_id):
         )
 
     series_rows = []
-    for series in Series.query.order_by(Series.id).all():
+    for series in Series.ordered_recent_first().all():
         started = any(gm.result is not None for gm in series.games)
         series_visible = is_self or started
 
@@ -86,7 +86,7 @@ def player_profile(player_id):
         ).first()
 
         games_rows = []
-        for game in series.games.order_by(Game.game_date).all():
+        for game in series.games.order_by(Game.game_date.desc()).all():
             game_pred = Prediction.query.filter_by(
                 player_id=player.id, prediction_type="game_winner", game_id=game.id
             ).first()

@@ -15,7 +15,7 @@ hold together - to confirm with Benoit:
 """
 from datetime import datetime, timezone
 
-from sqlalchemy import CheckConstraint, UniqueConstraint
+from sqlalchemy import CheckConstraint, UniqueConstraint, func
 
 from app.extensions import db
 
@@ -70,6 +70,23 @@ class Series(db.Model):
 
     def __repr__(self):
         return f"<Series {self.id} {self.team_a} vs {self.team_b} ({self.round})>"
+
+    @classmethod
+    def ordered_recent_first(cls):
+        """All series, most recently active first (based on the latest of
+        their games' game_date), so the dashboard/profile pages read like a
+        news feed: current round on top, older rounds further down. A
+        series with no games yet (just created, nothing scheduled) sorts
+        as if it were the most recent, since it's presumably the next
+        thing to happen."""
+        latest_game_date = (
+            db.session.query(func.max(Game.game_date))
+            .filter(Game.series_id == cls.id)
+            .correlate(cls)
+            .scalar_subquery()
+        )
+        far_future = datetime(2999, 1, 1, tzinfo=timezone.utc)
+        return cls.query.order_by(func.coalesce(latest_game_date, far_future).desc())
 
 
 class Game(db.Model):

@@ -10,6 +10,7 @@ from flask import Blueprint, g, render_template
 from app.auth import login_required
 from app.models import Game, Player, Prediction, Series
 from app.predictions import VALID_SCORES
+from app.scoring import series_status
 from app.time_utils import ensure_aware_utc
 
 bp = Blueprint("home", __name__)
@@ -50,11 +51,14 @@ def index():
     player = g.player
 
     series_rows = []
-    for series in Series.query.order_by(Series.id).all():
+    for series in Series.ordered_recent_first().all():
         started = any(gm.result is not None for gm in series.games)
+        wins_a = sum(1 for gm in series.games if gm.result == "team_a")
+        wins_b = sum(1 for gm in series.games if gm.result == "team_b")
+        status = series_status(wins_a, wins_b)
 
         games_rows = []
-        for game in series.games.order_by(Game.game_date).all():
+        for game in series.games.order_by(Game.game_date.desc()).all():
             open_ = game.result is None and ensure_aware_utc(game.game_date) > now
             games_rows.append(
                 {
@@ -71,6 +75,7 @@ def index():
             {
                 "series": series,
                 "started": started,
+                "finished": status["finished"],
                 "games": games_rows,
                 "winner_prediction": _player_prediction(player.id, "series_winner", series_id=series.id),
                 "score_prediction": _player_prediction(player.id, "series_score", series_id=series.id),

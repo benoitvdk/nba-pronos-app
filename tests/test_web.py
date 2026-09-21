@@ -297,3 +297,58 @@ def test_player_profile_reveals_others_predictions_once_locked(app, client, play
 
     assert resp.status_code == 200
     assert b"Boston Celtics" in resp.data
+
+
+# --- ordering: most recent series/games first -----------------------------
+
+def test_dashboard_orders_series_most_recent_first(app, client, player):
+    """The oldest round (first_round) was created first (lower id), the
+    finals last - but the dashboard should show the finals (latest games)
+    on top, oldest round at the bottom."""
+    old_series = Series(season=2025, round="first_round", team_a="Miami Heat", team_b="Orlando Magic")
+    new_series = Series(season=2025, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
+    db.session.add_all([old_series, new_series])
+    db.session.commit()
+    db.session.add_all(
+        [
+            Game(
+                series_id=old_series.id, team_a="Miami Heat", team_b="Orlando Magic",
+                game_date=PAST - timedelta(days=30), result="team_a",
+            ),
+            Game(
+                series_id=new_series.id, team_a="Boston Celtics", team_b="Denver Nuggets",
+                game_date=PAST, result="team_a",
+            ),
+        ]
+    )
+    db.session.commit()
+
+    _login(client, player)
+    resp = client.get("/")
+
+    body = resp.data.decode("utf-8")
+    assert body.index("Boston Celtics") < body.index("Miami Heat")
+
+
+def test_dashboard_orders_games_most_recent_first(app, client, player):
+    series = Series(season=2025, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
+    db.session.add(series)
+    db.session.commit()
+    older_game = Game(
+        series_id=series.id, team_a="Boston Celtics", team_b="Denver Nuggets",
+        game_date=PAST - timedelta(days=5), result="team_a",
+    )
+    newer_game = Game(
+        series_id=series.id, team_a="Boston Celtics", team_b="Denver Nuggets",
+        game_date=PAST, result="team_b",
+    )
+    db.session.add_all([older_game, newer_game])
+    db.session.commit()
+
+    _login(client, player)
+    resp = client.get("/")
+
+    body = resp.data.decode("utf-8")
+    assert body.index(newer_game.game_date.strftime("%d/%m")) < body.index(
+        older_game.game_date.strftime("%d/%m")
+    )
