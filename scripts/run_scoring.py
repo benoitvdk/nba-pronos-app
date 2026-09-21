@@ -1,5 +1,5 @@
-"""Recalcule les points de tous les pronostics match et série déjà
-déterminables, avec le moteur choisi.
+"""Recomputes points for all already-determinable game and series
+predictions, with the chosen engine.
 
 Usage:
     python -m scripts.run_scoring --engine classic
@@ -29,9 +29,9 @@ def main():
         games_updated = score_game_predictions(engine=args.engine)
         series_updated = score_series_predictions(engine=args.engine)
 
-    print(f"Moteur : {args.engine}")
-    print(f"Pronostics match notés  : {games_updated}")
-    print(f"Pronostics série notés  : {series_updated}")
+    print(f"Engine: {args.engine}")
+    print(f"Game predictions scored:   {games_updated}")
+    print(f"Series predictions scored: {series_updated}")
 
 
 if __name__ == "__main__":

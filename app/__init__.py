@@ -7,14 +7,14 @@ from app.extensions import db
 
 
 def create_app(config_class=Config):
-    """Application factory Flask. Sert à la fois l'API et la PWA (Jinja2 + manifest
-    + service worker) depuis un seul déploiement, comme prévu dans la spec."""
+    """Flask application factory. Serves both the API and the PWA (Jinja2 +
+    manifest + service worker) from a single deployment, as planned in the spec."""
     app = Flask(__name__)
     app.config.from_object(config_class)
 
     db.init_app(app)
 
-    from app.models import (  # noqa: F401  (enregistre les modèles auprès de SQLAlchemy)
+    from app.models import (  # noqa: F401  (registers the models with SQLAlchemy)
         Player,
         Series,
         Game,
@@ -41,9 +41,9 @@ def create_app(config_class=Config):
 
     @app.get("/sw.js")
     def service_worker():
-        # Servi depuis la racine (pas /static/sw.js) pour que le service worker
-        # puisse contrôler toute l'app : la portée par défaut d'un service
-        # worker se limite à son propre dossier et en dessous.
+        # Served from the root (not /static/sw.js) so the service worker can
+        # control the whole app: a service worker's default scope is limited
+        # to its own folder and below.
         return send_from_directory(
             os.path.join(app.static_folder), "sw.js", mimetype="application/javascript"
         )

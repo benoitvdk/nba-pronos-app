@@ -1,7 +1,7 @@
-"""Branche la logique pure de app/scoring.py aux données réelles (games,
-series, predictions). Recalcule is_correct/points_earned pour tout ce qui
-est déjà déterminable, à chaque exécution (idempotent - relancer ne fait
-que rafraîchir les valeurs)."""
+"""Wires the pure logic from app/scoring.py to the real data (games,
+series, predictions). Recomputes is_correct/points_earned for everything
+that's already determinable, on every run (idempotent - re-running only
+refreshes the values)."""
 from app.extensions import db
 from app.models import BracketPrediction, Game, Prediction, ScoringConfig, Series
 from app.scoring import (
@@ -16,7 +16,7 @@ from app.scoring import (
 def load_config(engine):
     rows = ScoringConfig.query.filter_by(engine=engine).all()
     if not rows:
-        raise ValueError(f"aucune ligne scoring_config pour l'engine {engine!r}")
+        raise ValueError(f"no scoring_config row for engine {engine!r}")
     return {r.rule_key: r.rule_value for r in rows}
 
 
@@ -27,7 +27,7 @@ def _series_status(series):
 
 
 def score_game_predictions(engine="classic"):
-    """Note les pronostics match par match dont le match a un résultat."""
+    """Scores game-by-game predictions for games that have a result."""
     cfg = load_config(engine)
     updated = 0
     predictions = (
@@ -48,8 +48,8 @@ def score_game_predictions(engine="classic"):
 
 
 def score_series_predictions(engine="classic"):
-    """Note les pronostics vainqueur-de-série et score-de-série pour les
-    séries terminées."""
+    """Scores series-winner and series-score predictions for finished
+    series."""
     cfg = load_config(engine)
     updated = 0
     for series in Series.query.all():
@@ -75,9 +75,9 @@ def score_series_predictions(engine="classic"):
 
 
 def score_bracket_predictions(category, actual_value):
-    """Note tous les pronostics bracket d'une catégorie une fois le résultat
-    réel connu (saisi à la main par l'admin, ex. le champion NBA en fin de
-    playoffs) - voir scripts/score_bracket.py."""
+    """Scores every bracket prediction for a category once the real result
+    is known (entered by hand by the admin, e.g. the NBA champion at the
+    end of the playoffs) - see scripts/score_bracket.py."""
     cfg_bracket = load_config("bracket")
     updated = 0
     predictions = BracketPrediction.query.filter_by(category=category).all()

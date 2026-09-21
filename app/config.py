@@ -2,15 +2,15 @@ import os
 
 
 class Config:
-    """Configuration de base, lue depuis les variables d'environnement (.env en local,
-    variables d'environnement Render en production)."""
+    """Base configuration, read from environment variables (.env locally,
+    Render environment variables in production)."""
 
     SECRET_KEY = os.environ.get("SECRET_KEY", "change-me")
 
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "")
     SQLALCHEMY_ENGINE_OPTIONS = {
-        # Neon coupe les connexions inactives : on vérifie la connexion avant
-        # de l'utiliser pour éviter les erreurs "server closed the connection".
+        # Neon drops idle connections: check the connection before using it
+        # to avoid "server closed the connection" errors.
         "pool_pre_ping": True,
     }
     SQLALCHEMY_TRACK_MODIFICATIONS = False

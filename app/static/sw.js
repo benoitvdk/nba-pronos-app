@@ -1,8 +1,8 @@
-// Service worker minimal : permet l'installation de l'app (icône sur l'écran
-// d'accueil) et un cache léger. Les pages de pronostics changent souvent, donc
-// on privilégie le réseau (network-first) et on ne retombe sur le cache que
-// hors-ligne, avec une page de repli simple pour la navigation.
-const CACHE_NAME = "nba-pronos-v2";
+// Minimal service worker: enables app installation (home screen icon) and
+// a light cache. Prediction pages change often, so the network is
+// preferred (network-first) and the cache is only used offline, with a
+// simple fallback page for navigation.
+const CACHE_NAME = "nba-pronos-v3";
 const APP_SHELL = [
   "/static/manifest.json",
   "/static/css/style.css",

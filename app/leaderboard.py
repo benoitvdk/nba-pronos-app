@@ -1,6 +1,6 @@
-"""Classement : somme des points (pronostics match/série + bracket) par
-joueur, tous moteurs confondus (les points sont déjà calculés avec le moteur
-choisi au moment de scripts.run_scoring / scripts.score_bracket)."""
+"""Leaderboard: sum of points (game/series predictions + bracket) per
+player, across all engines (points are already computed with the engine
+chosen at the time of scripts.run_scoring / scripts.score_bracket)."""
 from sqlalchemy import func
 
 from app.auth import login_required

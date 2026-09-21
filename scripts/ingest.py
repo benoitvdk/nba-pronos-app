@@ -1,13 +1,13 @@
-"""Récupère les résultats de matchs (balldontlie) et les cotes (theoddsapi),
-et met à jour la base. Ne crée aucune Series - elles doivent déjà exister
-(créées à la main par l'admin, voir README).
+"""Fetches game results (balldontlie) and odds (theoddsapi), and updates
+the database. Doesn't create any Series - they must already exist
+(created by hand by the admin, see README).
 
 Usage:
-    python -m scripts.ingest --season 2025             # test sur les playoffs passés
-    python -m scripts.ingest --season 2026              # vrais playoffs, une fois commencés
-    python -m scripts.ingest --season 2026 --skip-odds  # sans appeler theoddsapi
+    python -m scripts.ingest --season 2025             # test on past playoffs
+    python -m scripts.ingest --season 2026              # real playoffs, once started
+    python -m scripts.ingest --season 2026 --skip-odds  # without calling theoddsapi
 
-Pensé pour tourner sur un cron GitHub Actions (voir .github/workflows/ingest.yml).
+Designed to run on a GitHub Actions cron (see .github/workflows/ingest.yml).
 """
 import argparse
 import datetime
@@ -31,33 +31,33 @@ def main():
         "--season",
         type=int,
         default=datetime.date.today().year,
-        help="année de saison balldontlie (ex: 2025 pour les playoffs 2024-25)",
+        help="balldontlie season year (e.g. 2025 for the 2024-25 playoffs)",
     )
     parser.add_argument("--season-type", default="playoffs")
-    parser.add_argument("--skip-odds", action="store_true", help="ne pas appeler theoddsapi.com")
+    parser.add_argument("--skip-odds", action="store_true", help="don't call theoddsapi.com")
     args = parser.parse_args()
 
     bdl_key = os.environ.get("BALLDONTLIE_API_KEY")
     if not bdl_key:
-        print("BALLDONTLIE_API_KEY manquant dans .env", file=sys.stderr)
+        print("BALLDONTLIE_API_KEY missing from .env", file=sys.stderr)
         sys.exit(1)
 
     app = create_app()
     with app.app_context():
         raw_games = fetch_games(bdl_key, season=args.season, season_type=args.season_type)
         created, updated, skipped = sync_games_from_balldontlie(raw_games)
-        print(f"Matchs balldontlie récupérés : {len(raw_games)}")
-        print(f"  créés : {created}, mis à jour : {updated}, ignorés (pas de série correspondante) : {skipped}")
+        print(f"balldontlie games fetched: {len(raw_games)}")
+        print(f"  created: {created}, updated: {updated}, skipped (no matching series): {skipped}")
 
         if not args.skip_odds:
             odds_key = os.environ.get("ODDS_API_KEY")
             if not odds_key:
-                print("ODDS_API_KEY manquant dans .env, cotes ignorées", file=sys.stderr)
+                print("ODDS_API_KEY missing from .env, skipping odds", file=sys.stderr)
             else:
                 raw_events = fetch_nba_odds(odds_key)
                 odds_updated = sync_odds_from_oddsapi(raw_events)
-                print(f"Events theoddsapi récupérés : {len(raw_events)}")
-                print(f"  matchs mis à jour avec des cotes : {odds_updated}")
+                print(f"theoddsapi events fetched: {len(raw_events)}")
+                print(f"  games updated with odds: {odds_updated}")
 
 
 if __name__ == "__main__":

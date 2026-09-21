@@ -1,7 +1,7 @@
-"""Soumission des pronostics par les joueurs : match par match, vainqueur de
-série, et score exact de série (équipe + score combinés - voir
-app/scoring.py `series_score_key`). Un pronostic peut être modifié tant que
-le match/la série n'a pas commencé."""
+"""Prediction submission by players: game by game, series winner, and
+exact series score (team + score combined - see app/scoring.py
+`series_score_key`). A prediction can be changed as long as the
+game/series hasn't started."""
 from datetime import datetime, timezone
 
 from flask import Blueprint, abort, flash, g, redirect, request, url_for
@@ -31,7 +31,7 @@ def _upsert_prediction(player_id, prediction_type, predicted_value, game_id=None
         )
         db.session.add(pred)
     pred.predicted_value = predicted_value
-    # un nouveau pronostic (ou une modification) n'est pas encore noté
+    # a new prediction (or an edit) hasn't been scored yet
     pred.is_correct = None
     pred.points_earned = None
     db.session.commit()

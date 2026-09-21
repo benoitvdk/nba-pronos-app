@@ -1,4 +1,4 @@
-/* NBA Playoffs Pronos — feuille de style principale */
+/* NBA Playoffs Pronos — main stylesheet */
 
 :root {
   --red: #c8102e;
@@ -167,7 +167,7 @@ a { color: var(--navy-light); }
 
 form.inline { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.6rem; }
 
-/* --- Series cards (pronostics) --- */
+/* --- Series cards (predictions) --- */
 .series-card .series-head {
   display: flex;
   align-items: flex-start;
@@ -214,16 +214,15 @@ form.inline { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; 
   margin-bottom: 0.5rem;
 }
 
+.game-row-item { padding: 0.5rem 0; border-bottom: 1px solid #f2f2f4; }
+.game-row-item:last-child { border-bottom: none; }
 .game-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #f2f2f4;
   flex-wrap: wrap;
 }
-.game-row:last-child { border-bottom: none; }
 .game-row .game-date {
   font-size: 0.76rem;
   color: var(--muted);
@@ -239,6 +238,48 @@ form.inline { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; 
   color: var(--muted);
 }
 .empty-state .emoji { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+
+/* --- View other players' predictions (once locked) --- */
+.reveal-empty {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+details.reveal {
+  margin-top: 0.5rem;
+}
+details.reveal summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--navy-light);
+  list-style: none;
+  user-select: none;
+}
+details.reveal summary::-webkit-details-marker { display: none; }
+details.reveal summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 0.35rem;
+  transition: transform 0.15s ease;
+}
+details.reveal[open] summary::before { transform: rotate(90deg); }
+details.reveal .reveal-list {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+  background: #f9f9fb;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+details.reveal .reveal-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.3rem 0;
+}
+details.reveal .reveal-row + .reveal-row { border-top: 1px solid #eceef2; }
+details.reveal .reveal-row span { color: var(--muted); }
 
 /* --- Leaderboard --- */
 .podium {

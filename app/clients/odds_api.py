@@ -1,8 +1,8 @@
-"""Client minimal pour theoddsapi.com (cotes des matchs). Palier gratuit :
-500 crédits/mois ; un appel quotidien sur ce marché coûte environ 1 crédit
-par région interrogée, largement sous le quota (voir spec).
+"""Minimal client for theoddsapi.com (game odds). Free tier: 500
+credits/month; one daily call on this market costs about 1 credit per
+region queried, well under quota (see spec).
 
-Doc : https://the-odds-api.com/liveapi/guides/v4/
+Docs: https://the-odds-api.com/liveapi/guides/v4/
 """
 import requests
 
@@ -11,9 +11,9 @@ NBA_SPORT_KEY = "basketball_nba"
 
 
 def fetch_nba_odds(api_key, regions="us", markets="h2h", odds_format="decimal", session=None):
-    """Renvoie la liste brute des events NBA à venir/en cours avec leurs
-    cotes (l'API ne donne PAS d'historique sur le palier gratuit - seulement
-    ce qui est à venir ou en direct au moment de l'appel)."""
+    """Returns the raw list of upcoming/live NBA events with their odds
+    (the API does NOT provide history on the free tier - only what's
+    upcoming or live at the time of the call)."""
     http = session or requests
     resp = http.get(
         f"{BASE_URL}/sports/{NBA_SPORT_KEY}/odds",

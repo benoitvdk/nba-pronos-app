@@ -1,4 +1,4 @@
-name: Ingestion NBA (résultats + cotes)
+name: NBA ingestion (results + odds)
 
 on:
   schedule:
@@ -17,7 +17,7 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Lancer l'ingestion
+      - name: Run ingestion
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}

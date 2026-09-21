@@ -26,7 +26,7 @@
       <div class="section">
         <div class="section-label">Pronostic de série</div>
 
-        {# --- pronostic vainqueur de série --- #}
+        {# --- series winner prediction --- #}
         {% if row.winner_prediction %}
           <p><span class="pill done">Vainqueur : {{ series.team_a if row.winner_prediction.predicted_value == 'team_a' else series.team_b }}</span></p>
         {% elif row.started %}
@@ -39,7 +39,25 @@
           </form>
         {% endif %}
 
-        {# --- pronostic score exact --- #}
+        {% if row.started %}
+          {% if row.all_winner_predictions %}
+            <details class="reveal">
+              <summary>Voir les pronostics de tous ({{ row.all_winner_predictions | length }})</summary>
+              <div class="reveal-list">
+                {% for entry in row.all_winner_predictions %}
+                  <div class="reveal-row">
+                    <span>{{ entry.player_name }}</span>
+                    <strong>{{ series.team_a if entry.predicted_value == 'team_a' else series.team_b }}</strong>
+                  </div>
+                {% endfor %}
+              </div>
+            </details>
+          {% else %}
+            <p class="reveal-empty">Personne n'avait pronostiqué le vainqueur avant le coup d'envoi.</p>
+          {% endif %}
+        {% endif %}
+
+        {# --- exact score prediction --- #}
         {% if row.score_prediction %}
           {% set parts = row.score_prediction.predicted_value.split(':') %}
           <p><span class="pill done">Score : {{ series.team_a if parts[0] == 'team_a' else series.team_b }} {{ parts[1] }}</span></p>
@@ -61,27 +79,66 @@
             <button type="submit">Valider</button>
           </form>
         {% endif %}
+
+        {% if row.started %}
+          {% if row.all_score_predictions %}
+            <details class="reveal">
+              <summary>Voir les scores pronostiqués par tous ({{ row.all_score_predictions | length }})</summary>
+              <div class="reveal-list">
+                {% for entry in row.all_score_predictions %}
+                  {% set eparts = entry.predicted_value.split(':') %}
+                  <div class="reveal-row">
+                    <span>{{ entry.player_name }}</span>
+                    <strong>{{ series.team_a if eparts[0] == 'team_a' else series.team_b }} {{ eparts[1] }}</strong>
+                  </div>
+                {% endfor %}
+              </div>
+            </details>
+          {% else %}
+            <p class="reveal-empty">Personne n'avait pronostiqué de score avant le coup d'envoi.</p>
+          {% endif %}
+        {% endif %}
       </div>
 
-      {# --- matchs de la série --- #}
+      {# --- games in the series --- #}
       {% if row.games %}
         <div class="section">
           <div class="section-label">Matchs</div>
           {% for gr in row.games %}
             {% set game = gr.game %}
-            <div class="game-row">
-              <span class="game-date">{{ game.game_date.strftime('%d/%m %H:%M') }}</span>
-              {% if game.result %}
-                <span class="game-result"><span class="trophy">🏆</span>{{ game.team_a if game.result == 'team_a' else game.team_b }}</span>
-              {% elif gr.prediction %}
-                <span class="pill done">Pronostic : {{ game.team_a if gr.prediction.predicted_value == 'team_a' else game.team_b }}</span>
-              {% elif gr.open %}
-                <form class="inline" method="post" action="{{ url_for('predictions.predict_game', game_id=game.id) }}">
-                  <button type="submit" name="side" value="team_a" class="secondary">{{ game.team_a }}</button>
-                  <button type="submit" name="side" value="team_b" class="secondary">{{ game.team_b }}</button>
-                </form>
-              {% else %}
-                <span class="pill locked">Pronostic fermé</span>
+            <div class="game-row-item">
+              <div class="game-row">
+                <span class="game-date">{{ game.game_date.strftime('%d/%m %H:%M') }}</span>
+                {% if game.result %}
+                  <span class="game-result"><span class="trophy">🏆</span>{{ game.team_a if game.result == 'team_a' else game.team_b }}</span>
+                {% elif gr.prediction %}
+                  <span class="pill done">Pronostic : {{ game.team_a if gr.prediction.predicted_value == 'team_a' else game.team_b }}</span>
+                {% elif gr.open %}
+                  <form class="inline" method="post" action="{{ url_for('predictions.predict_game', game_id=game.id) }}">
+                    <button type="submit" name="side" value="team_a" class="secondary">{{ game.team_a }}</button>
+                    <button type="submit" name="side" value="team_b" class="secondary">{{ game.team_b }}</button>
+                  </form>
+                {% else %}
+                  <span class="pill locked">Pronostic fermé</span>
+                {% endif %}
+              </div>
+
+              {% if not gr.open %}
+                {% if gr.all_predictions %}
+                  <details class="reveal">
+                    <summary>Voir les pronostics de tous ({{ gr.all_predictions | length }})</summary>
+                    <div class="reveal-list">
+                      {% for entry in gr.all_predictions %}
+                        <div class="reveal-row">
+                          <span>{{ entry.player_name }}</span>
+                          <strong>{{ game.team_a if entry.predicted_value == 'team_a' else game.team_b }}</strong>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </details>
+                {% else %}
+                  <p class="reveal-empty">Personne n'avait pronostiqué ce match avant le coup d'envoi.</p>
+                {% endif %}
               {% endif %}
             </div>
           {% endfor %}

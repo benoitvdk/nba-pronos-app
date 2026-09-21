@@ -1,7 +1,7 @@
-"""Note les pronostics d'avant-playoffs (bracket) d'une catégorie, une fois
-le résultat réel connu. À lancer 4 fois en tout au fil des playoffs (dès
-qu'un champion de conférence est connu, puis à la fin pour le champion NBA
-et le MVP des finales).
+"""Scores pre-playoffs (bracket) predictions for a category, once the real
+result is known. Meant to be run 4 times in total over the course of the
+playoffs (as soon as a conference champion is known, then at the end for
+the NBA champion and the Finals MVP).
 
 Usage:
     python -m scripts.score_bracket --category east_champion --winner "Boston Celtics"
@@ -26,16 +26,16 @@ CATEGORIES = ("nba_champion", "finals_mvp", "east_champion", "west_champion")
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--category", choices=CATEGORIES, required=True)
-    parser.add_argument("--winner", required=True, help="Valeur réelle (doit correspondre exactement aux pronostics saisis)")
+    parser.add_argument("--winner", required=True, help="Actual value (must exactly match the submitted predictions)")
     args = parser.parse_args()
 
     app = create_app()
     with app.app_context():
         updated = score_bracket_predictions(args.category, args.winner)
 
-    print(f"Catégorie : {args.category}")
-    print(f"Résultat retenu : {args.winner}")
-    print(f"Pronostics notés : {updated}")
+    print(f"Category: {args.category}")
+    print(f"Result recorded: {args.winner}")
+    print(f"Predictions scored: {updated}")
 
 
 if __name__ == "__main__":

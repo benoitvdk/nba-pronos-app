@@ -1,5 +1,6 @@
-"""Tests des routes web : pronostics (match/série), classement, bracket.
-Utilise le client de test Flask, base SQLite en mémoire - pas de serveur réel."""
+"""Tests for the web routes: predictions (game/series), leaderboard,
+bracket. Uses the Flask test client, in-memory SQLite database - no real
+server."""
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -44,7 +45,7 @@ def _login(client, player):
     client.get(f"/login/{player.access_code}")
 
 
-# --- pronostic match ---------------------------------------------------
+# --- game prediction ----------------------------------------------------
 
 def test_predict_game_creates_prediction(app, client, player):
     series = Series(season=2025, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
@@ -61,7 +62,7 @@ def test_predict_game_creates_prediction(app, client, player):
     pred = Prediction.query.filter_by(player_id=player.id, game_id=game.id).first()
     assert pred is not None
     assert pred.predicted_value == "team_a"
-    assert pred.is_correct is None  # pas encore noté
+    assert pred.is_correct is None  # not scored yet
 
 
 def test_predict_game_rejected_once_played(app, client, player):
@@ -108,7 +109,7 @@ def test_predict_game_requires_login(app, client):
     assert "/login" in resp.headers["Location"]
 
 
-# --- pronostic série (vainqueur + score combinés) ---------------------
+# --- series prediction (winner + score combined) ------------------------
 
 def test_predict_series_winner_and_score(app, client, player):
     series = Series(season=2025, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
@@ -167,7 +168,7 @@ def test_predict_updates_existing_prediction_instead_of_duplicating(app, client,
     assert preds[0].predicted_value == "team_b"
 
 
-# --- classement ----------------------------------------------------------
+# --- leaderboard -----------------------------------------------------------
 
 def test_leaderboard_sums_prediction_and_bracket_points(app, client, player):
     other = Player(name="Bob", access_code="bob-code")
@@ -199,8 +200,8 @@ def test_leaderboard_sums_prediction_and_bracket_points(app, client, player):
     resp = client.get("/classement")
 
     assert resp.status_code == 200
-    assert b"11.0" in resp.data  # 1 (match) + 10 (bracket)
-    assert b"Bob" in resp.data  # affiche meme les joueurs a 0 point
+    assert b"11.0" in resp.data  # 1 (game) + 10 (bracket)
+    assert b"Bob" in resp.data  # even players with 0 points are shown
 
 
 # --- bracket -------------------------------------------------------------

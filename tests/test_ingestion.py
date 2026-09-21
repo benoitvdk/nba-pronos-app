@@ -1,7 +1,7 @@
-"""Tests de l'ingestion (app/ingestion.py) avec des données factices qui
-reprennent la forme exacte des réponses balldontlie.io / theoddsapi.com
-(cf. leur documentation officielle), et des clients HTTP (app/clients/*)
-avec requests mocké - aucun appel réseau réel ici."""
+"""Tests for ingestion (app/ingestion.py) with fake data that matches the
+exact shape of balldontlie.io / theoddsapi.com responses (see their
+official docs), and for the HTTP clients (app/clients/*) with requests
+mocked - no real network call here."""
 import os
 from unittest.mock import MagicMock
 
@@ -89,7 +89,7 @@ def test_sync_creates_game_for_matching_series(app):
 
 
 def test_sync_sets_result_using_series_team_order(app):
-    # la série a team_a = Nuggets alors que balldontlie donne Nuggets en "visitor"
+    # the series has team_a = Nuggets while balldontlie gives Nuggets as "visitor"
     series = Series(round="finals", team_a="Denver Nuggets", team_b="Boston Celtics")
     db.session.add(series)
     db.session.commit()
@@ -103,7 +103,7 @@ def test_sync_sets_result_using_series_team_order(app):
     sync_games_from_balldontlie(raw)
 
     game = Game.query.filter_by(external_id="102").first()
-    assert game.result == "team_b"  # Boston (vainqueur) == series.team_b
+    assert game.result == "team_b"  # Boston (winner) == series.team_b
 
 
 def test_sync_is_idempotent_no_duplicate_on_rerun(app):
@@ -113,7 +113,7 @@ def test_sync_is_idempotent_no_duplicate_on_rerun(app):
 
     raw = [_raw_game(103, "Boston Celtics", "Denver Nuggets", status_state="scheduled")]
     sync_games_from_balldontlie(raw)
-    # le match se termine, on relance avec la même liste (id inchangé)
+    # the game finishes, re-run with the same list (unchanged id)
     raw[0].update(status_state="final", home_team_score=100, visitor_team_score=90)
     created, updated, skipped = sync_games_from_balldontlie(raw)
 
@@ -123,21 +123,21 @@ def test_sync_is_idempotent_no_duplicate_on_rerun(app):
 
 
 def test_sync_skips_games_without_matching_series(app):
-    # aucune série en base du tout
+    # no series at all in the database
     raw = [_raw_game(104, "Boston Celtics", "Denver Nuggets")]
     created, updated, skipped = sync_games_from_balldontlie(raw)
     assert (created, updated, skipped) == (0, 0, 1)
 
 
 def test_sync_disambiguates_same_matchup_across_seasons(app):
-    # les deux mêmes équipes se sont recroisées deux années différentes
+    # the same two teams met again in two different years
     old_series = Series(season=2023, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
     new_series = Series(season=2024, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
     db.session.add_all([old_series, new_series])
     db.session.commit()
 
     raw = [_raw_game(105, "Boston Celtics", "Denver Nuggets", status_state="scheduled")]
-    # _raw_game met season=2024 par défaut
+    # _raw_game defaults to season=2024
     created, updated, skipped = sync_games_from_balldontlie(raw)
 
     assert (created, updated, skipped) == (1, 0, 0)
@@ -154,7 +154,7 @@ def test_sync_skips_ambiguous_matchup_without_season_match(app):
     )
     db.session.commit()
 
-    raw = [_raw_game(106, "Boston Celtics", "Denver Nuggets")]  # season=2024, aucune des deux
+    raw = [_raw_game(106, "Boston Celtics", "Denver Nuggets")]  # season=2024, matches neither
     created, updated, skipped = sync_games_from_balldontlie(raw)
     assert (created, updated, skipped) == (0, 0, 1)
 
@@ -183,7 +183,7 @@ def test_sync_odds_ignores_event_with_no_matching_series(app):
     assert updated == 0
 
 
-# --- clients (requests mocké, pas d'appel réseau) --------------------------
+# --- clients (requests mocked, no network call) ----------------------------
 
 def test_fetch_games_paginates_and_sends_auth_header():
     page1 = MagicMock()

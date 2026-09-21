@@ -1,9 +1,9 @@
-"""Ajoute un joueur avec un code d'accès généré automatiquement (pas de mot
-de passe). Affiche le lien de connexion complet à lui envoyer.
+"""Adds a player with an automatically generated access code (no
+password). Prints the full login link to send them.
 
 Usage:
-    python -m scripts.add_player "Prénom Nom"
-    python -m scripts.add_player "Prénom Nom" --base-url https://ton-app.onrender.com
+    python -m scripts.add_player "First Last"
+    python -m scripts.add_player "First Last" --base-url https://your-app.onrender.com
 """
 import argparse
 import os
@@ -22,18 +22,18 @@ from app.models import Player  # noqa: E402
 
 
 def generate_access_code():
-    # Assez court pour tenir dans un lien qu'on envoie par SMS/WhatsApp, assez
-    # long pour ne pas être devinable.
-    return secrets.token_urlsafe(9)  # ~12 caractères
+    # Short enough to fit in a link sent via SMS/WhatsApp, long enough to
+    # not be guessable.
+    return secrets.token_urlsafe(9)  # ~12 characters
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("name", help="Nom du joueur")
+    parser.add_argument("name", help="Player name")
     parser.add_argument(
         "--base-url",
         default="http://127.0.0.1:5000",
-        help="URL de base de l'app (par défaut : serveur de dev local)",
+        help="App base URL (defaults to the local dev server)",
     )
     args = parser.parse_args()
 
@@ -41,14 +41,14 @@ def main():
     with app.app_context():
         code = generate_access_code()
         while Player.query.filter_by(access_code=code).first() is not None:
-            code = generate_access_code()  # collision très improbable, sécurité
+            code = generate_access_code()  # very unlikely collision, safety net
 
         player = Player(name=args.name, access_code=code)
         db.session.add(player)
         db.session.commit()
 
-        print(f"Joueur créé : {player.name} (id={player.id})")
-        print(f"Lien à lui envoyer : {args.base_url}/login/{code}")
+        print(f"Player created: {player.name} (id={player.id})")
+        print(f"Link to send them: {args.base_url}/login/{code}")
 
 
 if __name__ == "__main__":

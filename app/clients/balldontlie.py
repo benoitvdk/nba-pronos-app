@@ -1,8 +1,8 @@
-"""Client minimal pour l'API NBA de balldontlie.io (résultats de matchs).
-Palier gratuit : 5 req/min, données de base - largement suffisant pour un
-usage à raison de quelques appels par jour pendant les playoffs.
+"""Minimal client for balldontlie.io's NBA API (game results). Free tier:
+5 req/min, basic data - more than enough for a handful of calls per day
+during the playoffs.
 
-Doc : https://docs.balldontlie.io (section Games)
+Docs: https://docs.balldontlie.io (Games section)
 """
 import requests
 
@@ -10,9 +10,9 @@ BASE_URL = "https://api.balldontlie.io/v1"
 
 
 def fetch_games(api_key, season, season_type="playoffs", per_page=100, session=None):
-    """Récupère tous les matchs d'une saison/type de saison donnés (pagination
-    automatique). season_type: preseason, regular, ist, playin, ou playoffs.
-    Renvoie la liste brute des objets "game" tels que renvoyés par l'API."""
+    """Fetches all games for a given season/season type (automatic
+    pagination). season_type: preseason, regular, ist, playin, or playoffs.
+    Returns the raw list of "game" objects as returned by the API."""
     http = session or requests
     games = []
     cursor = None

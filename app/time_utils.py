@@ -1,9 +1,8 @@
-"""Petit utilitaire de dates. SQLite (utilisé dans les tests) ne conserve pas
-le fuseau horaire des colonnes DateTime(timezone=True) - il renvoie des
-datetimes naïves, contrairement à Postgres/Neon en production qui renvoie
-bien des datetimes avec fuseau. Cette fonction homogénéise les deux avant
-toute comparaison, en supposant UTC quand l'info est absente (c'est toujours
-ce qu'on stocke)."""
+"""Small date utility. SQLite (used in the tests) doesn't keep the
+timezone of DateTime(timezone=True) columns - it returns naive datetimes,
+unlike Postgres/Neon in production which does return timezone-aware
+datetimes. This function makes the two consistent before any comparison,
+assuming UTC when the info is missing (that's always what's stored)."""
 from datetime import timezone
 
 

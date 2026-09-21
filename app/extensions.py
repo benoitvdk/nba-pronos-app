@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
 
-# Instance partagée, initialisée par l'application factory (app/__init__.py)
-# et importée par les modèles (app/models.py) et les scripts (scripts/init_db.py).
+# Shared instance, initialized by the application factory (app/__init__.py)
+# and imported by the models (app/models.py) and the scripts (scripts/init_db.py).
 db = SQLAlchemy()

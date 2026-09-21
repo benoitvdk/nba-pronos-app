@@ -1,17 +1,17 @@
-"""Modèle de données SQLAlchemy, tel que défini dans la spec (voir section
-"Data model" et "Pre-playoffs bracket predictions" du document de spec).
+"""SQLAlchemy data model, as defined in the spec (see the "Data model" and
+"Pre-playoffs bracket predictions" sections of the spec document).
 
-Deux petits ajouts par rapport au texte de la spec, nécessaires pour que le
-schéma tienne debout - à valider avec Benoit :
+Two small additions compared to the spec text, needed for the schema to
+hold together - to confirm with Benoit:
 
-- `Prediction.prediction_type` : la spec dit qu'une série peut recevoir deux
-  pronostics distincts ("winner and exact score"), tous deux rattachés à
-  `series_id`. Sans champ pour les distinguer, impossible de savoir lequel
-  est lequel une fois en base -> ajout d'un type explicite
+- `Prediction.prediction_type`: the spec says a series can receive two
+  distinct predictions ("winner and exact score"), both attached to
+  `series_id`. Without a field to tell them apart, there's no way to know
+  which is which once in the database -> added an explicit type
   (game_winner / series_winner / series_score).
-- `Series.winner_odds` et `Series.score_odds` sont stockés en JSON plutôt
-  qu'en simple nombre, car il y a une cote par équipe (winner_odds) et une
-  cote par score exact possible, ex. 4-0, 4-1, 4-2, 4-3 (score_odds).
+- `Series.winner_odds` and `Series.score_odds` are stored as JSON rather
+  than a plain number, since there's one odds value per team (winner_odds)
+  and one per possible exact score, e.g. 4-0, 4-1, 4-2, 4-3 (score_odds).
 """
 from datetime import datetime, timezone
 
@@ -29,7 +29,7 @@ class Player(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
-    # Lien ou code d'accès du joueur, tient lieu de login (pas de mot de passe, confirmé).
+    # Player's access link/code, doubles as login (no password, confirmed).
     access_code = db.Column(db.String(64), nullable=False, unique=True)
     created_at = db.Column(db.DateTime(timezone=True), default=_utcnow, nullable=False)
 
@@ -46,23 +46,23 @@ class Series(db.Model):
     __tablename__ = "series"
 
     id = db.Column(db.Integer, primary_key=True)
-    # année de DÉBUT de saison, convention balldontlie (ex: 2025 pour la
-    # saison 2025-26, dont les playoffs se jouent en avril-juin 2026).
-    # Nullable pour rester compatible avec les séries créées avant cet ajout -
-    # mais à renseigner systématiquement pour toute nouvelle série, c'est ce
-    # qui permet à l'ingestion de ne pas se tromper si les deux mêmes équipes
-    # se recroisent une autre année.
+    # STARTING year of the season, balldontlie convention (e.g. 2025 for
+    # the 2025-26 season, whose playoffs are played in April-June 2026).
+    # Nullable to stay compatible with series created before this field was
+    # added - but should always be filled in for any new series, since
+    # that's what lets ingestion avoid mistakes if the same two teams meet
+    # again in another year.
     season = db.Column(db.Integer, nullable=True)
-    # ex: "first_round", "conf_semis", "conf_finals", "finals"
+    # e.g.: "first_round", "conf_semis", "conf_finals", "finals"
     round = db.Column(db.String(32), nullable=False)
     team_a = db.Column(db.String(64), nullable=False)
     team_b = db.Column(db.String(64), nullable=False)
 
-    # Cotes saisies manuellement par l'admin (Benoit), theoddsapi.com ne couvrant
-    # pas les marchés vainqueur-de-série / score-de-série en offre gratuite.
+    # Odds entered manually by the admin (Benoit), since theoddsapi.com
+    # doesn't cover series-winner / series-score markets on the free tier.
     # winner_odds: {"team_a": 1.83, "team_b": 2.10}
     winner_odds = db.Column(db.JSON, nullable=True)
-    # score_odds: {"4-0": 6.5, "4-1": 5.0, "4-2": 3.5, "4-3": 3.0} (clé = score de l'équipe gagnante-perdante)
+    # score_odds: {"4-0": 6.5, "4-1": 5.0, "4-2": 3.5, "4-3": 3.0} (key = winning team-losing team score)
     score_odds = db.Column(db.JSON, nullable=True)
 
     games = db.relationship("Game", back_populates="series", lazy="dynamic")
@@ -80,14 +80,14 @@ class Game(db.Model):
     team_a = db.Column(db.String(64), nullable=False)
     team_b = db.Column(db.String(64), nullable=False)
     game_date = db.Column(db.DateTime(timezone=True), nullable=False)
-    # "team_a" / "team_b" une fois le match joué, vide avant
+    # "team_a" / "team_b" once the game has been played, empty before
     result = db.Column(db.String(16), nullable=True)
-    # Cote moneyline, récupérée automatiquement via theoddsapi.com
-    # ex: {"team_a": 1.65, "team_b": 2.25}
+    # Moneyline odds, fetched automatically via theoddsapi.com
+    # e.g.: {"team_a": 1.65, "team_b": 2.25}
     game_odds = db.Column(db.JSON, nullable=True)
-    # id du match côté balldontlie.io, pour ré-exécuter l'ingestion sans créer
-    # de doublons (ajouté avec le script d'ingestion - voir sql/002_*.sql pour
-    # une base déjà créée avant cet ajout).
+    # balldontlie.io game id, to re-run ingestion without creating
+    # duplicates (added along with the ingestion script - see sql/002_*.sql
+    # for a database created before this addition).
     external_id = db.Column(db.String(32), unique=True, nullable=True)
 
     series = db.relationship("Series", back_populates="games")
@@ -105,9 +105,9 @@ class Prediction(db.Model):
     game_id = db.Column(db.Integer, db.ForeignKey("games.id"), nullable=True)
     series_id = db.Column(db.Integer, db.ForeignKey("series.id"), nullable=True)
 
-    # game_winner (game_id renseigné) / series_winner / series_score (series_id renseigné)
+    # game_winner (game_id set) / series_winner / series_score (series_id set)
     prediction_type = db.Column(db.String(16), nullable=False)
-    predicted_value = db.Column(db.String(32), nullable=False)  # ex: "team_a", "4-2"
+    predicted_value = db.Column(db.String(32), nullable=False)  # e.g.: "team_a", "4-2"
     is_correct = db.Column(db.Boolean, nullable=True)
     points_earned = db.Column(db.Float, nullable=True, default=0)
 
@@ -133,8 +133,9 @@ class Prediction(db.Model):
 
 
 class ScoringConfig(db.Model):
-    """Valeurs de points, en base plutôt que codées en dur, modifiables sans toucher
-    au code. Une ligne par règle, par moteur (classic / odds_based)."""
+    """Point values, kept in the database rather than hardcoded, so they can
+    be changed without touching the code. One row per rule, per engine
+    (classic / odds_based)."""
 
     __tablename__ = "scoring_config"
 
@@ -152,9 +153,10 @@ class ScoringConfig(db.Model):
 
 
 class BracketPrediction(db.Model):
-    """Pronostics d'avant-playoffs (champion NBA, MVP des finales, champion de
-    conférence Est/Ouest), verrouillés avant le premier match et notés une seule
-    fois en fin de playoffs - table séparée des pronostics match/série."""
+    """Pre-playoffs predictions (NBA champion, Finals MVP, Eastern/Western
+    conference champion), locked before the first game and scored once at
+    the end of the playoffs - table kept separate from game/series
+    predictions."""
 
     __tablename__ = "bracket_predictions"
 

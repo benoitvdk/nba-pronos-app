@@ -1,9 +1,8 @@
-"""Tableau de bord : les matchs et séries encore ouverts au pronostic pour
-le joueur connecté, plus ce qu'il a déjà pronostiqué. Une fois un match ou
-une série verrouillé(e) (coup d'envoi passé / série commencée), les
-pronostics de tous les joueurs pour cet élément deviennent visibles par
-n'importe quel joueur connecté - jamais avant, pour ne pas influencer les
-pronostics des autres."""
+"""Dashboard: games and series still open for prediction for the logged-in
+player, plus what they've already predicted. Once a game or series is
+locked (tip-off passed / series started), every player's predictions for
+that item become visible to any logged-in player - never before, so as
+not to influence other players' predictions."""
 from datetime import datetime, timezone
 
 from flask import Blueprint, g, render_template
@@ -23,12 +22,12 @@ def _player_prediction(player_id, prediction_type, game_id=None, series_id=None)
 
 
 def _all_predictions(prediction_type, exclude_player_id, game_id=None, series_id=None):
-    """Pronostics des AUTRES joueurs (le joueur connecté voit déjà le sien
-    plus haut, pas la peine de se revoir soi-même dans la liste) pour un
-    match/une série, triés par nom. À n'appeler que pour un élément déjà
-    verrouillé (voir index() ci-dessous) : la fonction elle-même ne vérifie
-    rien, c'est l'appelant qui garantit que rien n'est révélé avant le coup
-    d'envoi."""
+    """Predictions from OTHER players (the logged-in player already sees
+    their own above, no need to see themselves again in the list) for a
+    game/series, sorted by name. Only call this for an item that's already
+    locked (see index() below): the function itself doesn't check
+    anything, it's the caller's job to guarantee nothing is revealed before
+    tip-off."""
     rows = (
         Prediction.query.filter_by(
             prediction_type=prediction_type, game_id=game_id, series_id=series_id

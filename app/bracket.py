@@ -1,7 +1,7 @@
-"""Pronostics d'avant-playoffs (bracket) : champion NBA, MVP des finales,
-champion de chaque conférence. Verrouillés dès qu'un match de playoffs a été
-joué (voir spec - un seul pronostic par catégorie et par joueur, saisi
-librement en texte faute d'une liste d'équipes/joueurs en base)."""
+"""Pre-playoffs (bracket) predictions: NBA champion, Finals MVP, champion
+of each conference. Locked as soon as a playoff game has been played (see
+spec - one prediction per category and per player, entered as free text
+since there's no list of teams/players in the database)."""
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
 
 from app.auth import login_required
