@@ -2,7 +2,7 @@
 // a light cache. Prediction pages change often, so the network is
 // preferred (network-first) and the cache is only used offline, with a
 // simple fallback page for navigation.
-const CACHE_NAME = "nba-pronos-v3";
+const CACHE_NAME = "nba-pronos-v4";
 const APP_SHELL = [
   "/static/manifest.json",
   "/static/css/style.css",
