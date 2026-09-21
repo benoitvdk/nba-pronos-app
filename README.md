@@ -32,9 +32,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-To recompute points once game results are in the database (this runs
-automatically after every automatic ingestion, see below - only needed by
-hand locally, or for the bracket, which is never automatic):
+To recompute points once game results are in the database:
 
 ```bash
 python -m scripts.run_scoring --engine classic      # or --engine odds_based
@@ -74,16 +72,10 @@ python -m scripts.ingest --season 2026   # real 2027 playoffs, once they start
 ```
 
 A GitHub Actions workflow (`.github/workflows/ingest.yml`) is ready to run
-this automatically every hour, for free, on a public repo, then
-immediately recompute points with the classic engine (`scripts.run_scoring
---engine classic`) so predictions show as correct/wrong without anyone
-having to run anything by hand — you just need to add `DATABASE_URL`,
-`BALLDONTLIE_API_KEY` and `ODDS_API_KEY` to the GitHub repo secrets
-(Settings > Secrets and variables > Actions), and update `--season` in
-there when the time comes. Switching to the odds-based engine means
-editing that workflow step (or running `scripts.run_scoring --engine
-odds_based` by hand, but then the next automatic run overwrites it with
-the classic engine again).
+this automatically every hour, for free, on a public repo — you just need
+to add `DATABASE_URL`, `BALLDONTLIE_API_KEY` and `ODDS_API_KEY` to the
+GitHub repo secrets (Settings > Secrets and variables > Actions), and
+update `--season` in there when the time comes.
 
 Known limitation: theoddsapi.com only provides odds for upcoming/live
 games (no history on the free tier), so the odds part can only really be
@@ -166,7 +158,7 @@ tests/
   test_ingestion.py  ingestion tests (mocked APIs, no network calls)
   test_web.py        web route tests (predictions, leaderboard, bracket)
 .github/workflows/
-  ingest.yml       GitHub Actions cron (free) for automatic ingestion + scoring
+  ingest.yml       GitHub Actions cron (free) for automatic ingestion
 render.yaml        Render Blueprint (web service + environment variables)
 wsgi.py            entry point for gunicorn / Render
 ```
@@ -180,3 +172,6 @@ wsgi.py            entry point for gunicorn / Render
 - [x] PWA frontend (predictions, leaderboard, bracket, installable, offline)
 - [x] Deployed on Render
 - [ ] Clean up test series before the real 2026-27 season
+- [ ] Average odds across multiple bookmakers instead of only taking the
+      first one available (`app/ingestion.py`, `sync_odds_from_oddsapi`)
+- [ ] Support another competition alongside the playoffs: the NBA Cup
