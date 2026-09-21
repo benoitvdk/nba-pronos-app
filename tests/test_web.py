@@ -230,3 +230,70 @@ def test_bracket_locked_once_playoffs_started(app, client, player):
 
     assert resp.status_code == 200
     assert BracketPrediction.query.filter_by(player_id=player.id, category="nba_champion").first() is None
+
+
+# --- player profile -------------------------------------------------------
+
+def test_player_profile_shows_own_open_predictions(app, client, player):
+    series = Series(season=2025, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
+    db.session.add(series)
+    db.session.commit()
+    game = Game(series_id=series.id, team_a="Boston Celtics", team_b="Denver Nuggets", game_date=FUTURE)
+    db.session.add(game)
+    db.session.commit()
+
+    _login(client, player)
+    client.post(f"/predict/game/{game.id}", data={"side": "team_a"}, follow_redirects=True)
+
+    resp = client.get(f"/joueur/{player.id}")
+    assert resp.status_code == 200
+    assert b"Boston Celtics" in resp.data
+
+
+def test_player_profile_hides_others_open_predictions(app, client, player):
+    other = Player(name="Bob", access_code="bob-code")
+    db.session.add(other)
+    series = Series(season=2025, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
+    db.session.add(series)
+    db.session.commit()
+    game = Game(series_id=series.id, team_a="Boston Celtics", team_b="Denver Nuggets", game_date=FUTURE)
+    db.session.add(game)
+    db.session.commit()
+    db.session.add(
+        Prediction(
+            player_id=other.id, game_id=game.id, prediction_type="game_winner", predicted_value="team_a",
+        )
+    )
+    db.session.commit()
+
+    _login(client, player)
+    resp = client.get(f"/joueur/{other.id}")
+
+    assert resp.status_code == 200
+    assert "Pas encore révélé".encode("utf-8") in resp.data
+
+
+def test_player_profile_reveals_others_predictions_once_locked(app, client, player):
+    other = Player(name="Bob", access_code="bob-code")
+    db.session.add(other)
+    series = Series(season=2025, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
+    db.session.add(series)
+    db.session.commit()
+    game = Game(
+        series_id=series.id, team_a="Boston Celtics", team_b="Denver Nuggets", game_date=PAST, result="team_a",
+    )
+    db.session.add(game)
+    db.session.commit()
+    db.session.add(
+        Prediction(
+            player_id=other.id, game_id=game.id, prediction_type="game_winner", predicted_value="team_a",
+            is_correct=True, points_earned=1,
+        )
+    )
+    db.session.commit()
+
+    _login(client, player)
+    resp = client.get(f"/joueur/{other.id}")
+
+    assert resp.status_code == 200
+    assert b"Boston Celtics" in resp.data

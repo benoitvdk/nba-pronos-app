@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ player.name }}{% endblock %}
+{% block content %}
+  <p class="muted"><a href="{{ url_for('leaderboard.index') }}">&larr; Retour au classement</a></p>
+
+  <div class="card">
+    <h3>{{ player.name }}{{ ' (toi)' if is_self }}</h3>
+  </div>
+
+  <div class="card">
+    <h3>Pronostics d'avant-playoffs</h3>
+    {% if not bracket_rows %}
+      <p class="muted">Aucun pronostic bracket.</p>
+    {% else %}
+      {% for row in bracket_rows %}
+        <div class="bracket-field">
+          <label>{{ row.label }}</label>
+          {% if row.hidden %}
+            <div class="locked-value">🔒 Pas encore révélé</div>
+          {% else %}
+            <div class="locked-value">
+              {{ row.prediction.predicted_value }}
+              {% if row.prediction.is_correct is not none %}
+                <span class="pill {{ 'done' if row.prediction.is_correct else 'locked' }}">
+                  {{ '✓' if row.prediction.is_correct else '✗' }} {{ '%.1f' | format(row.prediction.points_earned or 0) }} pt
+                </span>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  {% if not series_rows %}
+    <div class="empty-state">
+      <span class="emoji">🏀</span>
+      Aucun pronostic de match ou de série pour l'instant.
+    </div>
+  {% endif %}
+
+  {% for row in series_rows %}
+    {% set series = row.series %}
+    <div class="card series-card">
+      <div class="series-head">
+        <div>
+          <span class="round-tag">{{ series.round | replace('_', ' ') | title }}</span>
+          <div class="matchup">{{ series.team_a }}<span class="vs">vs</span>{{ series.team_b }}</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Pronostic de série</div>
+
+        {% if row.winner_hidden %}
+          <p class="muted">🔒 Vainqueur pas encore révélé (série pas commencée).</p>
+        {% elif row.winner_prediction %}
+          <p>
+            <span class="pill {{ 'locked' if row.winner_prediction.is_correct is none else ('done' if row.winner_prediction.is_correct else 'upcoming') }}">
+              Vainqueur : {{ series.team_a if row.winner_prediction.predicted_value == 'team_a' else series.team_b }}
+              {% if row.winner_prediction.is_correct is not none %}
+                {{ '✓' if row.winner_prediction.is_correct else '✗' }} {{ '%.1f' | format(row.winner_prediction.points_earned or 0) }} pt
+              {% endif %}
+            </span>
+          </p>
+        {% else %}
+          <p class="muted">Pas de pronostic vainqueur.</p>
+        {% endif %}
+
+        {% if row.score_hidden %}
+          <p class="muted">🔒 Score pas encore révélé (série pas commencée).</p>
+        {% elif row.score_prediction %}
+          {% set parts = row.score_prediction.predicted_value.split(':') %}
+          <p>
+            <span class="pill {{ 'locked' if row.score_prediction.is_correct is none else ('done' if row.score_prediction.is_correct else 'upcoming') }}">
+              Score : {{ series.team_a if parts[0] == 'team_a' else series.team_b }} {{ parts[1] }}
+              {% if row.score_prediction.is_correct is not none %}
+                {{ '✓' if row.score_prediction.is_correct else '✗' }} {{ '%.1f' | format(row.score_prediction.points_earned or 0) }} pt
+              {% endif %}
+            </span>
+          </p>
+        {% else %}
+          <p class="muted">Pas de pronostic de score.</p>
+        {% endif %}
+      </div>
+
+      {% if row.games %}
+        <div class="section">
+          <div class="section-label">Matchs</div>
+          {% for gr in row.games %}
+            {% set game = gr.game %}
+            <div class="game-row-item">
+              <div class="game-row">
+                <span class="game-date">{{ game.game_date.strftime('%d/%m %H:%M') }}</span>
+                {% if gr.hidden %}
+                  <span class="pill locked">🔒 Pas encore révélé</span>
+                {% else %}
+                  <span class="pill {{ 'locked' if gr.prediction.is_correct is none else ('done' if gr.prediction.is_correct else 'upcoming') }}">
+                    {{ game.team_a if gr.prediction.predicted_value == 'team_a' else game.team_b }}
+                    {% if gr.prediction.is_correct is not none %}
+                      {{ '✓' if gr.prediction.is_correct else '✗' }} {{ '%.1f' | format(gr.prediction.points_earned or 0) }} pt
+                    {% endif %}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+{% endblock %}

@@ -13,19 +13,19 @@
         {% if rows|length > 1 %}
         <div class="spot second">
           <span class="medal">🥈</span>
-          <div class="name">{{ rows[1].player.name }}</div>
+          <div class="name"><a href="{{ url_for('leaderboard.player_profile', player_id=rows[1].player.id) }}">{{ rows[1].player.name }}</a></div>
           <div class="pts">{{ '%.1f' | format(rows[1].total) }} pts</div>
         </div>
         {% endif %}
         <div class="spot first">
           <span class="medal">🥇</span>
-          <div class="name">{{ rows[0].player.name }}</div>
+          <div class="name"><a href="{{ url_for('leaderboard.player_profile', player_id=rows[0].player.id) }}">{{ rows[0].player.name }}</a></div>
           <div class="pts">{{ '%.1f' | format(rows[0].total) }} pts</div>
         </div>
         {% if rows|length > 2 %}
         <div class="spot third">
           <span class="medal">🥉</span>
-          <div class="name">{{ rows[2].player.name }}</div>
+          <div class="name"><a href="{{ url_for('leaderboard.player_profile', player_id=rows[2].player.id) }}">{{ rows[2].player.name }}</a></div>
           <div class="pts">{{ '%.1f' | format(rows[2].total) }} pts</div>
         </div>
         {% endif %}
@@ -43,7 +43,7 @@
           {% for row in rows %}
             <tr class="{{ 'me' if row.player.id == g.player.id }}">
               <td>{{ loop.index }}</td>
-              <td>{{ row.player.name }}{{ ' (toi)' if row.player.id == g.player.id }}</td>
+              <td><a href="{{ url_for('leaderboard.player_profile', player_id=row.player.id) }}">{{ row.player.name }}</a>{{ ' (toi)' if row.player.id == g.player.id }}</td>
               <td class="num">{{ '%.1f' | format(row.total) }}</td>
             </tr>
           {% endfor %}
