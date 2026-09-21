@@ -22,15 +22,18 @@ def _player_prediction(player_id, prediction_type, game_id=None, series_id=None)
     ).first()
 
 
-def _all_predictions(prediction_type, game_id=None, series_id=None):
-    """Pronostics de tous les joueurs pour un match/une série, triés par nom.
-    À n'appeler que pour un élément déjà verrouillé (voir index() ci-dessous) :
-    la fonction elle-même ne vérifie rien, c'est l'appelant qui garantit que
-    rien n'est révélé avant le coup d'envoi."""
+def _all_predictions(prediction_type, exclude_player_id, game_id=None, series_id=None):
+    """Pronostics des AUTRES joueurs (le joueur connecté voit déjà le sien
+    plus haut, pas la peine de se revoir soi-même dans la liste) pour un
+    match/une série, triés par nom. À n'appeler que pour un élément déjà
+    verrouillé (voir index() ci-dessous) : la fonction elle-même ne vérifie
+    rien, c'est l'appelant qui garantit que rien n'est révélé avant le coup
+    d'envoi."""
     rows = (
         Prediction.query.filter_by(
             prediction_type=prediction_type, game_id=game_id, series_id=series_id
         )
+        .filter(Prediction.player_id != exclude_player_id)
         .join(Player)
         .order_by(Player.name)
         .all()
@@ -57,7 +60,7 @@ def index():
                     "prediction": _player_prediction(player.id, "game_winner", game_id=game.id),
                     "open": open_,
                     "all_predictions": (
-                        _all_predictions("game_winner", game_id=game.id) if not open_ else []
+                        _all_predictions("game_winner", player.id, game_id=game.id) if not open_ else []
                     ),
                 }
             )
@@ -70,10 +73,10 @@ def index():
                 "winner_prediction": _player_prediction(player.id, "series_winner", series_id=series.id),
                 "score_prediction": _player_prediction(player.id, "series_score", series_id=series.id),
                 "all_winner_predictions": (
-                    _all_predictions("series_winner", series_id=series.id) if started else []
+                    _all_predictions("series_winner", player.id, series_id=series.id) if started else []
                 ),
                 "all_score_predictions": (
-                    _all_predictions("series_score", series_id=series.id) if started else []
+                    _all_predictions("series_score", player.id, series_id=series.id) if started else []
                 ),
             }
         )
