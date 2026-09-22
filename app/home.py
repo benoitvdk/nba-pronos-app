@@ -83,6 +83,9 @@ def index():
         wins_b = sum(1 for gm in series_games if gm.result == "team_b")
         status = series_status(wins_a, wins_b)
 
+        winner_pred = own_by_series.get((series.id, "series_winner"))
+        score_pred = own_by_series.get((series.id, "series_score"))
+
         games_rows = []
         for game in series_games:
             open_ = game.result is None and ensure_aware_utc(game.game_date) > now
@@ -95,14 +98,26 @@ def index():
                 }
             )
 
+        # Own running point total for this series (games + winner + score),
+        # shown on the collapsed card header - own predictions are never
+        # hidden from their author, so nothing to gate here.
+        total_points = sum(
+            float(gr["prediction"].points_earned or 0) for gr in games_rows if gr["prediction"]
+        )
+        if winner_pred:
+            total_points += float(winner_pred.points_earned or 0)
+        if score_pred:
+            total_points += float(score_pred.points_earned or 0)
+
         series_rows.append(
             {
                 "series": series,
                 "started": started,
                 "finished": status["finished"],
                 "games": games_rows,
-                "winner_prediction": own_by_series.get((series.id, "series_winner")),
-                "score_prediction": own_by_series.get((series.id, "series_score")),
+                "winner_prediction": winner_pred,
+                "score_prediction": score_pred,
+                "total_points": total_points,
                 "all_winner_predictions": (
                     other_by_series.get((series.id, "series_winner"), []) if started else []
                 ),

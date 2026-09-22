@@ -118,15 +118,30 @@ def player_profile(player_id):
         if winner_pred is None and score_pred is None and not games_rows:
             continue
 
+        # Running point total for this series, from whatever is currently
+        # visible on this profile (own profile: everything; someone else's:
+        # only what's already unlocked) - matches what's actually displayed
+        # below, so it can't leak a not-yet-revealed result.
+        total_points = sum(
+            float(gr["prediction"].points_earned or 0) for gr in games_rows if gr["prediction"]
+        )
+        if series_visible:
+            if winner_pred:
+                total_points += float(winner_pred.points_earned or 0)
+            if score_pred:
+                total_points += float(score_pred.points_earned or 0)
+
         series_rows.append(
             {
                 "series": series,
+                "started": started,
                 "finished": finished,
                 "winner_prediction": winner_pred if series_visible else None,
                 "winner_hidden": winner_pred is not None and not series_visible,
                 "score_prediction": score_pred if series_visible else None,
                 "score_hidden": score_pred is not None and not series_visible,
                 "games": games_rows,
+                "total_points": total_points,
             }
         )
 

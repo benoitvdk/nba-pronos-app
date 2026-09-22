@@ -51,6 +51,9 @@
           <div class="matchup">{{ series.team_a }}<span class="vs">vs</span>{{ series.team_b }}</div>
         </div>
         <div class="series-head-right">
+          {% if row.started %}
+            <span class="pill points">{{ '%.1f' | format(row.total_points) }} pt</span>
+          {% endif %}
           {% if row.finished %}
             <span class="pill done">Terminée</span>
           {% endif %}

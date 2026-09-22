@@ -165,6 +165,7 @@ a { color: var(--navy-light); }
 .pill.upcoming { background: #eef2ff; color: var(--navy-light); }
 .pill.locked { background: #f1f1f5; color: var(--muted); }
 .pill.wrong { background: var(--error-bg); color: var(--error-text); }
+.pill.points { background: #fff7e6; color: var(--navy); font-variant-numeric: tabular-nums; }
 
 /* --- Prediction outcome colors (green = correct, red = wrong, gray = pending) --- */
 .reveal-row strong.correct { color: var(--success-text); }
