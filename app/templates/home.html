@@ -20,7 +20,9 @@
         <div class="series-head-top">
           <div>
             <span class="round-tag">{{ series.round | replace('_', ' ') | title }}</span>
-            <div class="matchup">{{ series.team_a }}<span class="vs">vs</span>{{ series.team_b }}</div>
+            <div class="matchup">
+              <span class="team-dot" style="background:{{ series.team_a | team_color }}"></span>{{ series.team_a }}<span class="vs">vs</span><span class="team-dot" style="background:{{ series.team_b | team_color }}"></span>{{ series.team_b }}
+            </div>
           </div>
           <div class="series-head-right">
             {% if row.finished %}
@@ -51,8 +53,8 @@
         {% else %}
           <form class="inline" method="post" action="{{ url_for('predictions.predict_series_winner', series_id=series.id) }}">
             <span class="muted">Vainqueur de la série :</span>
-            <button type="submit" name="side" value="team_a">{{ series.team_a }}</button>
-            <button type="submit" name="side" value="team_b">{{ series.team_b }}</button>
+            <button type="submit" name="side" value="team_a" style="border-left: 4px solid {{ series.team_a | team_color }}">{{ series.team_a }}</button>
+            <button type="submit" name="side" value="team_b" style="border-left: 4px solid {{ series.team_b | team_color }}">{{ series.team_b }}</button>
           </form>
         {% endif %}
 
@@ -137,8 +139,8 @@
                     </span>
                   {% elif gr.open %}
                     <form class="inline" method="post" action="{{ url_for('predictions.predict_game', game_id=game.id) }}">
-                      <button type="submit" name="side" value="team_a" class="secondary">{{ game.team_a }}</button>
-                      <button type="submit" name="side" value="team_b" class="secondary">{{ game.team_b }}</button>
+                      <button type="submit" name="side" value="team_a" class="secondary" style="border-left: 4px solid {{ game.team_a | team_color }}">{{ game.team_a }}</button>
+                      <button type="submit" name="side" value="team_b" class="secondary" style="border-left: 4px solid {{ game.team_b | team_color }}">{{ game.team_b }}</button>
                     </form>
                   {% elif not game.result %}
                     <span class="pill locked">Pronostic fermé</span>

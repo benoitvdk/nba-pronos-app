@@ -204,6 +204,21 @@ details.series-card[open] .chevron { transform: rotate(90deg); }
   gap: 0.75rem;
 }
 .series-card .series-points { display: flex; justify-content: flex-end; margin-top: 0.5rem; }
+
+/* --- Team color accents (dot on team names, left border on prediction
+   buttons) - see app/team_colors.py. Kept as small accents rather than
+   full backgrounds so they never compete with the correct/wrong colors
+   above. --- */
+.team-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+form.inline button[style*="border-left"] { border-left-width: 4px; border-left-style: solid; padding-left: 0.8rem; }
 .series-card .round-tag {
   display: inline-block;
   font-size: 0.7rem;
