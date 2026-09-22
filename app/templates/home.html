@@ -10,18 +10,28 @@
 
   {% for row in series_rows %}
     {% set series = row.series %}
-    <div class="card series-card">
-      <div class="series-head">
+    {# Finished series start collapsed (nothing left to predict there), the
+       current/upcoming ones start open - keeps the page light to render
+       once a full playoffs' worth of series have piled up. The player's
+       own manual expand/collapse is then remembered across visits via
+       localStorage (see the script after the loop). #}
+    <details class="card series-card" data-series-id="{{ series.id }}" {{ 'open' if not row.finished }}>
+      <summary class="series-head">
         <div>
           <span class="round-tag">{{ series.round | replace('_', ' ') | title }}</span>
           <div class="matchup">{{ series.team_a }}<span class="vs">vs</span>{{ series.team_b }}</div>
         </div>
-        {% if row.started %}
-          <span class="pill done">En cours</span>
-        {% else %}
-          <span class="pill upcoming">À venir</span>
-        {% endif %}
-      </div>
+        <div class="series-head-right">
+          {% if row.finished %}
+            <span class="pill done">Terminée</span>
+          {% elif row.started %}
+            <span class="pill done">En cours</span>
+          {% else %}
+            <span class="pill upcoming">À venir</span>
+          {% endif %}
+          <span class="chevron" aria-hidden="true">▸</span>
+        </div>
+      </summary>
 
       <div class="section">
         <div class="section-label">Pronostic de série</div>
@@ -150,6 +160,24 @@
           {% endfor %}
         </div>
       {% endif %}
-    </div>
+    </details>
   {% endfor %}
+
+  {% if series_rows %}
+    <script>
+      // Remember which series the player opened/closed by hand, so a
+      // reload (or their next visit) doesn't re-collapse something they
+      // just expanded to fill in a prediction, and vice versa.
+      document.querySelectorAll("details.series-card[data-series-id]").forEach((el) => {
+        const key = "series-open-" + el.dataset.seriesId;
+        try {
+          const stored = localStorage.getItem(key);
+          if (stored !== null) el.open = stored === "1";
+        } catch (e) { /* localStorage unavailable (private mode, etc.) */ }
+        el.addEventListener("toggle", () => {
+          try { localStorage.setItem(key, el.open ? "1" : "0"); } catch (e) {}
+        });
+      });
+    </script>
+  {% endif %}
 {% endblock %}

@@ -115,6 +115,12 @@ Once logged in via their link, each player lands on `/` (dashboard):
   Eastern/Western champion) — free text, locked as soon as the first
   playoff game has been played.
 
+Each series on `/` is a collapsible card (finished series start collapsed,
+the current/upcoming ones start open), so the dashboard stays quick to
+render once a full playoffs' worth of series have piled up. Manually
+opening or closing a series is remembered per browser (`localStorage`),
+independently of the default.
+
 The app is an installable PWA (manifest + service worker, generated
 icons): on mobile or desktop, the browser offers "Install app" / "Add to
 Home Screen". An offline page is shown if the player loses their

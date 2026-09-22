@@ -174,12 +174,33 @@ a { color: var(--navy-light); }
 form.inline { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.6rem; }
 
 /* --- Series cards (predictions) --- */
+/* .series-card is a <details> element: collapsing it lets the browser skip
+   layout/paint for series the player doesn't need right now (mainly
+   finished ones), which is what keeps the dashboard quick once a full
+   playoffs' worth of series have piled up. */
+details.series-card { padding: 0; }
+details.series-card > .series-head {
+  padding: 1.1rem 1.1rem 0.85rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+details.series-card > .series-head::-webkit-details-marker { display: none; }
+details.series-card:not([open]) > .series-head { padding-bottom: 1.1rem; }
+details.series-card > *:not(.series-head) { padding: 0 1.1rem; }
+details.series-card > *:last-child { padding-bottom: 1.1rem; }
+.series-card .series-head-right { display: flex; align-items: center; gap: 0.5rem; }
+.series-card .chevron {
+  color: var(--muted);
+  font-size: 0.85rem;
+  transition: transform 0.15s ease;
+}
+details.series-card[open] .chevron { transform: rotate(90deg); }
 .series-card .series-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.85rem;
 }
 .series-card .round-tag {
   display: inline-block;
