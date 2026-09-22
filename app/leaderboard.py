@@ -1,6 +1,7 @@
 """Leaderboard: sum of points (game/series predictions + bracket) per
 player, across all engines (points are already computed with the engine
 chosen at the time of scripts.run_scoring / scripts.score_bracket)."""
+from collections import defaultdict
 from datetime import datetime, timezone
 
 from flask import Blueprint, g, render_template
@@ -73,23 +74,35 @@ def player_profile(player_id):
             {"label": label, "prediction": pred if bracket_visible else None, "hidden": not bracket_visible}
         )
 
+    # Batched instead of querying per series/game (same fix as app/home.py):
+    # one query for every series' games, one for this player's predictions.
+    series_list = Series.ordered_recent_first().all()
+    series_ids = [series.id for series in series_list]
+
+    games_by_series = defaultdict(list)
+    for game in Game.query.filter(Game.series_id.in_(series_ids)).order_by(Game.game_date.desc()).all():
+        games_by_series[game.series_id].append(game)
+
+    preds_by_game = {}
+    preds_by_series = {}
+    for pred in Prediction.query.filter_by(player_id=player.id).all():
+        if pred.game_id is not None:
+            preds_by_game[pred.game_id] = pred
+        else:
+            preds_by_series[(pred.series_id, pred.prediction_type)] = pred
+
     series_rows = []
-    for series in Series.ordered_recent_first().all():
-        started = any(gm.result is not None for gm in series.games)
+    for series in series_list:
+        series_games = games_by_series.get(series.id, [])
+        started = any(gm.result is not None for gm in series_games)
         series_visible = is_self or started
 
-        winner_pred = Prediction.query.filter_by(
-            player_id=player.id, prediction_type="series_winner", series_id=series.id
-        ).first()
-        score_pred = Prediction.query.filter_by(
-            player_id=player.id, prediction_type="series_score", series_id=series.id
-        ).first()
+        winner_pred = preds_by_series.get((series.id, "series_winner"))
+        score_pred = preds_by_series.get((series.id, "series_score"))
 
         games_rows = []
-        for game in series.games.order_by(Game.game_date.desc()).all():
-            game_pred = Prediction.query.filter_by(
-                player_id=player.id, prediction_type="game_winner", game_id=game.id
-            ).first()
+        for game in series_games:
+            game_pred = preds_by_game.get(game.id)
             if game_pred is None:
                 continue
             game_open = game.result is None and ensure_aware_utc(game.game_date) > now
