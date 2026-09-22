@@ -107,32 +107,16 @@ single-elimination knockout) rather than a best-of-7 series:
   (`cup_group`, `cup_quarterfinal`, `cup_semifinal`, `cup_final`) - but
   it's always a "series" of exactly one game.
 - Unlike the playoffs, **you don't need to create these series by hand**:
-  `scripts/ingest.py --season-type ist` creates them automatically the
-  first time it sees a given pairing (see `app/ingestion.py`
-  `sync_cup_games_from_balldontlie`). You do need to tell it which round
-  you're ingesting, since balldontlie's `ist` season type covers the whole
-  Cup without saying which round a game belongs to:
+  `scripts/ingest.py --season-type ist` creates them automatically, the
+  first time it sees a given pairing, reading both the round (group stage
+  or which knockout round) AND the exact group straight off balldontlie's
+  `ist_stage` field (confirmed against their docs - null for regular
+  season/playoff games, one of `East/West Group A/B/C`,
+  `East/West Quarterfinal`, `East/West Semifinal`, `Championship` for a
+  Cup game). Nothing to configure - same command shape as the playoffs:
 
   ```bash
-  # Group stage - pass a JSON file mapping each team's full name to its
-  # group (the NBA publishes the 6 groups before the season; balldontlie/
-  # theoddsapi don't expose them, so this has to be maintained by hand,
-  # once per season):
-  python -m scripts.ingest --season 2026 --season-type ist --stage cup_group --groups-file cup_groups.json
-
-  # Knockout rounds, once the NBA has set the matchups - no groups file needed:
-  python -m scripts.ingest --season 2026 --season-type ist --stage cup_quarterfinal
-  python -m scripts.ingest --season 2026 --season-type ist --stage cup_semifinal
-  python -m scripts.ingest --season 2026 --season-type ist --stage cup_final
-  ```
-
-  `cup_groups.json` example:
-
-  ```json
-  {
-    "Boston Celtics": "Groupe A (Est)",
-    "Miami Heat": "Groupe A (Est)"
-  }
+  python -m scripts.ingest --season 2026 --season-type ist
   ```
 
 - Only game-winner predictions exist for a Cup round (no series
@@ -144,8 +128,8 @@ single-elimination knockout) rather than a best-of-7 series:
   `app/bracket.py` `CUP_CATEGORIES` - provisional point values in
   `scripts/init_db.py` / `sql/seed_scoring_config.sql`, adjust as needed).
 - `.github/workflows/ingest.yml` runs a fixed command - update its `Run
-  ingestion` step (add `--season-type ist --stage ... [--groups-file ...]`)
-  when switching to Cup mode, and back when switching to playoffs.
+  ingestion` step (add `--season-type ist`) when switching to Cup mode,
+  and back when switching to playoffs.
 - If your database was created before this addition, also run
   `sql/004_add_group_name_to_series.sql` in Neon's SQL Editor (a fresh
   database via `init_db.py` already has the column).

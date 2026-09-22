@@ -32,7 +32,10 @@ def app():
         db.drop_all()
 
 
-def _raw_game(game_id, home, away, status_state="scheduled", home_score=0, away_score=0, date="2025-05-20"):
+def _raw_game(
+    game_id, home, away, status_state="scheduled", home_score=0, away_score=0, date="2025-05-20",
+    ist_stage=None,
+):
     return {
         "id": game_id,
         "date": date,
@@ -46,6 +49,10 @@ def _raw_game(game_id, home, away, status_state="scheduled", home_score=0, away_
         "datetime": f"{date}T23:00:00.000Z",
         "home_team": {"id": 2, "full_name": home, "abbreviation": home[:3].upper()},
         "visitor_team": {"id": 7, "full_name": away, "abbreviation": away[:3].upper()},
+        # null for regular season/playoff games, only present for the NBA
+        # Cup (see app/ingestion.py._cup_round_and_group) - only set in the
+        # fixtures below that actually exercise sync_cup_games_from_balldontlie.
+        "ist_stage": ist_stage,
     }
 
 
@@ -165,30 +172,27 @@ def test_sync_skips_ambiguous_matchup_without_season_match(app):
 
 # --- sync_cup_games_from_balldontlie ---------------------------------------
 
-def test_sync_cup_creates_series_and_group_name_on_first_sight(app):
-    raw = [_raw_game(301, "Boston Celtics", "Miami Heat", status_state="scheduled")]
-    groups = {"Boston Celtics": "Groupe A (Est)", "Miami Heat": "Groupe A (Est)"}
+def test_sync_cup_creates_series_and_group_name_from_ist_stage(app):
+    raw = [_raw_game(301, "Boston Celtics", "Miami Heat", status_state="scheduled", ist_stage="East Group C")]
 
-    created_series, created_games, updated_games = sync_cup_games_from_balldontlie(
-        raw, stage="cup_group", groups=groups
-    )
+    created_series, created_games, updated_games, skipped = sync_cup_games_from_balldontlie(raw)
 
-    assert (created_series, created_games, updated_games) == (1, 1, 0)
+    assert (created_series, created_games, updated_games, skipped) == (1, 1, 0, 0)
     series = Series.query.filter_by(round="cup_group").one()
     assert {series.team_a, series.team_b} == {"Boston Celtics", "Miami Heat"}
-    assert series.group_name == "Groupe A (Est)"
+    assert series.group_name == "East Group C"  # taken straight from ist_stage
     game = Game.query.filter_by(external_id="301").first()
     assert game.series_id == series.id
 
 
 def test_sync_cup_is_idempotent_no_duplicate_series_or_game(app):
-    raw = [_raw_game(302, "Boston Celtics", "Miami Heat", status_state="scheduled")]
-    sync_cup_games_from_balldontlie(raw, stage="cup_group")
+    raw = [_raw_game(302, "Boston Celtics", "Miami Heat", status_state="scheduled", ist_stage="East Group C")]
+    sync_cup_games_from_balldontlie(raw)
     raw[0].update(status_state="final", home_team_score=100, visitor_team_score=90)
 
-    created_series, created_games, updated_games = sync_cup_games_from_balldontlie(raw, stage="cup_group")
+    created_series, created_games, updated_games, skipped = sync_cup_games_from_balldontlie(raw)
 
-    assert (created_series, created_games, updated_games) == (0, 0, 1)
+    assert (created_series, created_games, updated_games, skipped) == (0, 0, 1, 0)
     assert Series.query.filter_by(round="cup_group").count() == 1
     assert Game.query.filter_by(external_id="302").first().result == "team_a"
 
@@ -199,34 +203,53 @@ def test_sync_cup_does_not_reuse_a_playoff_series_between_the_same_teams(app):
     db.session.add(Series(round="finals", team_a="Boston Celtics", team_b="Miami Heat"))
     db.session.commit()
 
-    raw = [_raw_game(303, "Boston Celtics", "Miami Heat", status_state="scheduled")]
-    created_series, created_games, updated_games = sync_cup_games_from_balldontlie(raw, stage="cup_group")
+    raw = [_raw_game(303, "Boston Celtics", "Miami Heat", status_state="scheduled", ist_stage="East Group C")]
+    created_series, created_games, updated_games, skipped = sync_cup_games_from_balldontlie(raw)
 
     assert created_series == 1
     assert Series.query.filter_by(round="cup_group").count() == 1
     assert Series.query.filter_by(round="finals").count() == 1
 
 
-def test_sync_cup_group_name_only_set_for_group_stage(app):
-    raw = [_raw_game(304, "Boston Celtics", "Miami Heat", status_state="scheduled")]
-    groups = {"Boston Celtics": "Groupe A (Est)"}
+@pytest.mark.parametrize(
+    "ist_stage,expected_round",
+    [
+        ("East Group A", "cup_group"),
+        ("West Group B", "cup_group"),
+        ("East Quarterfinal", "cup_quarterfinal"),
+        ("West Quarterfinal", "cup_quarterfinal"),
+        ("East Semifinal", "cup_semifinal"),
+        ("West Semifinal", "cup_semifinal"),
+        ("Championship", "cup_final"),
+    ],
+)
+def test_sync_cup_maps_every_known_ist_stage_to_a_round(app, ist_stage, expected_round):
+    raw = [_raw_game(400 + hash(ist_stage) % 100, "Boston Celtics", "Miami Heat", ist_stage=ist_stage)]
+    sync_cup_games_from_balldontlie(raw)
+    assert Series.query.filter_by(round=expected_round).count() == 1
 
-    sync_cup_games_from_balldontlie(raw, stage="cup_quarterfinal", groups=groups)
+
+def test_sync_cup_group_name_only_set_for_knockout_rounds(app):
+    raw = [_raw_game(304, "Boston Celtics", "Miami Heat", status_state="scheduled", ist_stage="East Quarterfinal")]
+
+    sync_cup_games_from_balldontlie(raw)
 
     series = Series.query.filter_by(round="cup_quarterfinal").one()
     assert series.group_name is None
 
 
-def test_sync_cup_team_missing_from_groups_map_leaves_group_name_none(app):
-    raw = [_raw_game(305, "Boston Celtics", "Miami Heat", status_state="scheduled")]
-    created_series, _, _ = sync_cup_games_from_balldontlie(raw, stage="cup_group", groups={})
-    assert created_series == 1
-    assert Series.query.filter_by(round="cup_group").one().group_name is None
+def test_sync_cup_skips_game_with_no_ist_stage(app):
+    # Shouldn't happen when fetched with season_type="ist", but defend
+    # against balldontlie's payload changing shape rather than crashing.
+    raw = [_raw_game(305, "Boston Celtics", "Miami Heat", ist_stage=None)]
+    created_series, created_games, updated_games, skipped = sync_cup_games_from_balldontlie(raw)
+    assert (created_series, created_games, updated_games, skipped) == (0, 0, 0, 1)
 
 
-def test_sync_cup_rejects_unknown_stage(app):
+def test_sync_cup_rejects_unrecognized_ist_stage(app):
+    raw = [_raw_game(306, "Boston Celtics", "Miami Heat", ist_stage="Play-In")]
     with pytest.raises(ValueError):
-        sync_cup_games_from_balldontlie([], stage="cup_wildcard")
+        sync_cup_games_from_balldontlie(raw)
 
 
 # --- sync_odds_from_oddsapi ------------------------------------------------

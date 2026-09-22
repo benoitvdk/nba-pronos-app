@@ -11,7 +11,9 @@ around: since a Cup matchup is always a single game (see
 app/scoring.py.is_cup_round), there's no per-series odds to enter by hand
 and nothing gained by making the admin pre-create ~60 group-stage series
 one by one - ingestion creates the wrapping Series itself the first time
-it sees a given pairing.
+it sees a given pairing, reading both the round AND the group straight off
+balldontlie's `ist_stage` field (see _cup_round_and_group below) - no
+manual input needed at all, unlike the playoffs.
 """
 from datetime import datetime, timezone
 
@@ -25,6 +27,38 @@ CUP_STAGES = (
     f"{CUP_ROUND_PREFIX}semifinal",
     f"{CUP_ROUND_PREFIX}final",
 )
+
+# balldontlie tags every NBA Cup game with an `ist_stage` field (null for
+# regular season/playoff games) - confirmed against their docs (docs.
+# balldontlie.io / nba.balldontlie.io), available since the 2025 season.
+# It's the source of truth for both the round AND, during the group stage,
+# the exact group a game belongs to (its value IS the group name) - no
+# admin-maintained mapping needed, unlike what an earlier version of this
+# function assumed.
+_IST_STAGE_TO_ROUND = {
+    "East Group A": f"{CUP_ROUND_PREFIX}group",
+    "East Group B": f"{CUP_ROUND_PREFIX}group",
+    "East Group C": f"{CUP_ROUND_PREFIX}group",
+    "West Group A": f"{CUP_ROUND_PREFIX}group",
+    "West Group B": f"{CUP_ROUND_PREFIX}group",
+    "West Group C": f"{CUP_ROUND_PREFIX}group",
+    "East Quarterfinal": f"{CUP_ROUND_PREFIX}quarterfinal",
+    "West Quarterfinal": f"{CUP_ROUND_PREFIX}quarterfinal",
+    "East Semifinal": f"{CUP_ROUND_PREFIX}semifinal",
+    "West Semifinal": f"{CUP_ROUND_PREFIX}semifinal",
+    "Championship": f"{CUP_ROUND_PREFIX}final",
+}
+
+
+def _cup_round_and_group(ist_stage):
+    """Maps balldontlie's `ist_stage` value to our internal round (see
+    CUP_STAGES) plus a group_name, set only for a group-stage game (its
+    value is already the group's real name, e.g. "East Group A")."""
+    if ist_stage not in _IST_STAGE_TO_ROUND:
+        raise ValueError(f"unrecognized ist_stage: {ist_stage!r} (expected one of: {sorted(_IST_STAGE_TO_ROUND)})")
+    round_ = _IST_STAGE_TO_ROUND[ist_stage]
+    group_name = ist_stage if round_ == f"{CUP_ROUND_PREFIX}group" else None
+    return round_, group_name
 
 
 def _team_side(series, team_name):
@@ -126,13 +160,13 @@ def sync_games_from_balldontlie(raw_games):
     return created, updated, skipped
 
 
-def _find_cup_series(home_name, away_name, stage, season=None):
+def _find_cup_series(home_name, away_name, round_, season=None):
     """Like _find_series, but only among series already tagged with this
-    Cup `stage` - keeps auto-creation from ever matching an unrelated
+    Cup round - keeps auto-creation from ever matching an unrelated
     playoff series between the same two teams."""
     candidates = [
         s
-        for s in Series.query.filter_by(round=stage).all()
+        for s in Series.query.filter_by(round=round_).all()
         if {s.team_a, s.team_b} == {home_name, away_name}
     ]
     if not candidates:
@@ -146,43 +180,38 @@ def _find_cup_series(home_name, away_name, stage, season=None):
     return None
 
 
-def sync_cup_games_from_balldontlie(raw_games, stage, groups=None):
+def sync_cup_games_from_balldontlie(raw_games):
     """Like sync_games_from_balldontlie, but for the NBA Cup: since a Cup
     matchup is always a single game (see app/scoring.py.is_cup_round),
     there's no reason to make the admin pre-create a Series by hand first -
     this creates the wrapping Series itself, the first time it sees a
-    given pairing for this `stage`.
+    given pairing, tagged with the round and group balldontlie's
+    `ist_stage` field reports for that game (see _cup_round_and_group) -
+    unlike the playoffs, nothing here needs to be supplied by hand.
 
-    stage: one of CUP_STAGES - which round these raw_games belong to. The
-    balldontlie payload doesn't say (its `season_type="ist"` covers the
-    whole Cup, group stage and knockout alike), so it's supplied by
-    whoever runs the ingestion for that batch of games - see
-    scripts/ingest.py --stage.
-    groups: optional {team_full_name: group_name} map, used only when
-    stage == "cup_group", to tag newly-created series with the group they
-    belong to (Series.group_name) - to confirm with Benoit: the Cup's
-    actual group assignments aren't available from either free API, so
-    this map has to be maintained by hand, once per season (see README).
-    A team missing from the map is left with group_name=None rather than
-    failing the whole ingestion run.
+    A game with no ist_stage (shouldn't happen when fetched with
+    season_type="ist", but the API's payload isn't contractually
+    guaranteed) is skipped rather than failing the whole run.
 
-    Returns (created_series, created_games, updated_games).
+    Returns (created_series, created_games, updated_games, skipped_no_stage).
     """
-    if stage not in CUP_STAGES:
-        raise ValueError(f"unknown Cup stage: {stage!r} (expected: {CUP_STAGES})")
-
-    created_series = created_games = updated_games = 0
+    created_series = created_games = updated_games = skipped = 0
 
     for raw in raw_games:
+        ist_stage = raw.get("ist_stage")
+        if not ist_stage:
+            skipped += 1
+            continue
+        round_, group_name = _cup_round_and_group(ist_stage)
+
         home_name = raw["home_team"]["full_name"]
         away_name = raw["visitor_team"]["full_name"]
 
-        series = _find_cup_series(home_name, away_name, stage, season=raw.get("season"))
+        series = _find_cup_series(home_name, away_name, round_, season=raw.get("season"))
         if series is None:
-            group_name = (groups or {}).get(home_name) if stage == f"{CUP_ROUND_PREFIX}group" else None
             series = Series(
                 season=raw.get("season"),
-                round=stage,
+                round=round_,
                 team_a=home_name,
                 team_b=away_name,
                 group_name=group_name,
@@ -197,7 +226,7 @@ def sync_cup_games_from_balldontlie(raw_games, stage, groups=None):
             updated_games += 1
 
     db.session.commit()
-    return created_series, created_games, updated_games
+    return created_series, created_games, updated_games, skipped
 
 
 def sync_odds_from_oddsapi(raw_events):

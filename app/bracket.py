@@ -25,10 +25,10 @@ PLAYOFFS_CATEGORIES = (
     ("west_champion", "Champion Conférence Ouest"),
 )
 
-# Group names below are a placeholder ("Groupe A/B/C" per conference) - to
-# confirm with Benoit once the NBA has published the real 2026-27 Cup
-# groups, and to keep in sync with whatever names are used in the
-# --groups-file passed to scripts/ingest.py for the group stage.
+# The real 2026-27 groups (3 per conference, A/B/C - see NBA.com's
+# official announcement) match this A/B/C-per-conference shape, so these
+# category keys don't need touching season to season; only the point
+# values below are provisional.
 CUP_CATEGORIES = (
     ("cup_champion", "Vainqueur de la NBA Cup"),
     ("cup_finalist_east", "Finaliste Conférence Est"),
