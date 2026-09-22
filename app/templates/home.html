@@ -47,7 +47,7 @@
 
         {# --- series winner prediction --- #}
         {% if row.winner_prediction %}
-          <p><span class="pill {{ 'done' if row.winner_prediction.is_correct else ('locked' if row.winner_prediction.is_correct is none else 'wrong') }}">Vainqueur : {{ series.team_a if row.winner_prediction.predicted_value == 'team_a' else series.team_b }}</span></p>
+          <p><span class="pill {{ 'done' if row.winner_prediction.is_correct else ('locked' if row.winner_prediction.is_correct is none else 'wrong') }}">Vainqueur : {{ (series.team_a if row.winner_prediction.predicted_value == 'team_a' else series.team_b) | team_short_name }}</span></p>
           {% if not row.started %}
             <form class="inline" method="post" action="{{ url_for('predictions.predict_series_winner', series_id=series.id) }}">
               <span class="muted">Changer :</span>
@@ -73,7 +73,7 @@
                 {% for entry in row.all_winner_predictions %}
                   <div class="reveal-row">
                     <span>{{ entry.player_name }}</span>
-                    <strong class="{{ 'correct' if entry.is_correct else ('pending' if entry.is_correct is none else 'wrong') }}">{{ series.team_a if entry.predicted_value == 'team_a' else series.team_b }}</strong>
+                    <strong class="{{ 'correct' if entry.is_correct else ('pending' if entry.is_correct is none else 'wrong') }}">{{ (series.team_a if entry.predicted_value == 'team_a' else series.team_b) | team_short_name }}</strong>
                   </div>
                 {% endfor %}
               </div>
@@ -86,7 +86,7 @@
         {# --- exact score prediction --- #}
         {% if row.score_prediction %}
           {% set parts = row.score_prediction.predicted_value.split(':') %}
-          <p><span class="pill {{ 'done' if row.score_prediction.is_correct else ('locked' if row.score_prediction.is_correct is none else 'wrong') }}">Score : {{ series.team_a if parts[0] == 'team_a' else series.team_b }} {{ parts[1] }}</span></p>
+          <p><span class="pill {{ 'done' if row.score_prediction.is_correct else ('locked' if row.score_prediction.is_correct is none else 'wrong') }}">Score : {{ (series.team_a if parts[0] == 'team_a' else series.team_b) | team_short_name }} {{ parts[1] }}</span></p>
           {% if not row.started %}
             <form class="inline" method="post" action="{{ url_for('predictions.predict_series_score', series_id=series.id) }}">
               <span class="muted">Changer :</span>
@@ -131,7 +131,7 @@
                   {% set eparts = entry.predicted_value.split(':') %}
                   <div class="reveal-row">
                     <span>{{ entry.player_name }}</span>
-                    <strong class="{{ 'correct' if entry.is_correct else ('pending' if entry.is_correct is none else 'wrong') }}">{{ series.team_a if eparts[0] == 'team_a' else series.team_b }} {{ eparts[1] }}</strong>
+                    <strong class="{{ 'correct' if entry.is_correct else ('pending' if entry.is_correct is none else 'wrong') }}">{{ (series.team_a if eparts[0] == 'team_a' else series.team_b) | team_short_name }} {{ eparts[1] }}</strong>
                   </div>
                 {% endfor %}
               </div>
@@ -160,7 +160,7 @@
                   {% endif %}
                   {% if gr.prediction %}
                     <span class="pill {{ 'done' if gr.prediction.is_correct else ('locked' if gr.prediction.is_correct is none else 'wrong') }}">
-                      Pronostic : {{ game.team_a if gr.prediction.predicted_value == 'team_a' else game.team_b }}
+                      Prono : {{ (game.team_a if gr.prediction.predicted_value == 'team_a' else game.team_b) | team_short_name }}
                       {% if gr.prediction.is_correct is not none %}{{ '✓' if gr.prediction.is_correct else '✗' }}{% endif %}
                     </span>
                     {% if gr.open %}
@@ -188,7 +188,7 @@
                       {% for entry in gr.all_predictions %}
                         <div class="reveal-row">
                           <span>{{ entry.player_name }}</span>
-                          <strong class="{{ 'correct' if entry.is_correct else ('pending' if entry.is_correct is none else 'wrong') }}">{{ game.team_a if entry.predicted_value == 'team_a' else game.team_b }}</strong>
+                          <strong class="{{ 'correct' if entry.is_correct else ('pending' if entry.is_correct is none else 'wrong') }}">{{ (game.team_a if entry.predicted_value == 'team_a' else game.team_b) | team_short_name }}</strong>
                         </div>
                       {% endfor %}
                     </div>
