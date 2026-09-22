@@ -190,7 +190,7 @@ details.series-card > .series-head::-webkit-details-marker { display: none; }
 details.series-card:not([open]) > .series-head { padding-bottom: 1.1rem; }
 details.series-card > *:not(.series-head) { padding: 0 1.1rem; }
 details.series-card > *:last-child { padding-bottom: 1.1rem; }
-.series-card .series-head-right { display: flex; align-items: center; gap: 0.5rem; }
+.series-card .series-head-right { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
 .series-card .chevron {
   color: var(--muted);
   font-size: 0.85rem;
