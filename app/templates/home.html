@@ -25,6 +25,11 @@
             </div>
           </div>
           <div class="series-head-right">
+            {% if row.started %}
+              {# Actual games-won score (not a pronostic) - only meaningful
+                 once the series has started. #}
+              <span class="pill series-score">{{ row.wins_a }}-{{ row.wins_b }}</span>
+            {% endif %}
             {% if row.finished %}
               <span class="pill locked">Terminée</span>
             {% elif row.started %}

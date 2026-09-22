@@ -122,6 +122,8 @@ def index():
                 "series": series,
                 "started": started,
                 "finished": status["finished"],
+                "wins_a": wins_a,
+                "wins_b": wins_b,
                 "games": games_rows,
                 "winner_prediction": winner_pred,
                 "score_prediction": score_pred,

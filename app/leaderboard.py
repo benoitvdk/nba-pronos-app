@@ -149,6 +149,8 @@ def player_profile(player_id):
                 "series": series,
                 "started": started,
                 "finished": finished,
+                "wins_a": wins_a,
+                "wins_b": wins_b,
                 "winner_prediction": winner_pred if series_visible else None,
                 "winner_hidden": winner_pred is not None and not series_visible,
                 "score_prediction": score_pred if series_visible else None,
