@@ -197,12 +197,13 @@ details.series-card > *:last-child { padding-bottom: 1.1rem; }
   transition: transform 0.15s ease;
 }
 details.series-card[open] .chevron { transform: rotate(90deg); }
-.series-card .series-head {
+.series-card .series-head-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
 }
+.series-card .series-points { display: flex; justify-content: flex-end; margin-top: 0.5rem; }
 .series-card .round-tag {
   display: inline-block;
   font-size: 0.7rem;

@@ -17,23 +17,27 @@
        localStorage (see the script after the loop). #}
     <details class="card series-card" data-series-id="{{ series.id }}" {{ 'open' if not row.finished }}>
       <summary class="series-head">
-        <div>
-          <span class="round-tag">{{ series.round | replace('_', ' ') | title }}</span>
-          <div class="matchup">{{ series.team_a }}<span class="vs">vs</span>{{ series.team_b }}</div>
+        <div class="series-head-top">
+          <div>
+            <span class="round-tag">{{ series.round | replace('_', ' ') | title }}</span>
+            <div class="matchup">{{ series.team_a }}<span class="vs">vs</span>{{ series.team_b }}</div>
+          </div>
+          <div class="series-head-right">
+            {% if row.finished %}
+              <span class="pill done">Terminée</span>
+            {% elif row.started %}
+              <span class="pill done">En cours</span>
+            {% else %}
+              <span class="pill upcoming">À venir</span>
+            {% endif %}
+            <span class="chevron" aria-hidden="true">▸</span>
+          </div>
         </div>
-        <div class="series-head-right">
-          {% if row.started %}
+        {% if row.started %}
+          <div class="series-points">
             <span class="pill points">{{ '%.1f' | format(row.total_points) }} pt</span>
-          {% endif %}
-          {% if row.finished %}
-            <span class="pill done">Terminée</span>
-          {% elif row.started %}
-            <span class="pill done">En cours</span>
-          {% else %}
-            <span class="pill upcoming">À venir</span>
-          {% endif %}
-          <span class="chevron" aria-hidden="true">▸</span>
-        </div>
+          </div>
+        {% endif %}
       </summary>
 
       <div class="section">
