@@ -273,6 +273,18 @@ form.inline button[style*="background"]:hover { filter: brightness(0.92); }
   gap: 0.6rem;
   flex-wrap: wrap;
 }
+.game-row .game-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+.game-row .game-number {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
 .game-row .game-date {
   font-size: 0.76rem;
   color: var(--muted);

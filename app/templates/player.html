@@ -109,7 +109,10 @@
             {% set game = gr.game %}
             <div class="game-row-item">
               <div class="game-row">
-                <span class="game-date">{{ game.game_date.strftime('%d/%m %H:%M') }}</span>
+                <span class="game-meta">
+                  <strong class="game-number">Game {{ gr.game_number }}</strong>
+                  <span class="game-date">{{ game.game_date.strftime('%d/%m %H:%M') }}</span>
+                </span>
                 {% if gr.hidden %}
                   <span class="pill locked">🔒 Pas encore révélé</span>
                 {% else %}

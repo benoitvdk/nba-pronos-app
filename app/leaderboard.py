@@ -104,6 +104,14 @@ def player_profile(player_id):
         winner_pred = preds_by_series.get((series.id, "series_winner"))
         score_pred = preds_by_series.get((series.id, "series_score"))
 
+        # 1-indexed position of each game within the FULL series (Game 1 ..
+        # Game 7), computed before games_rows below filters down to only the
+        # games this player predicted - so "Game 3" still means the third
+        # game of the series even if games 1 and 2 are skipped here.
+        game_numbers = {
+            gm.id: n for n, gm in enumerate(sorted(series_games, key=lambda gm: gm.game_date), start=1)
+        }
+
         games_rows = []
         for game in series_games:
             game_pred = preds_by_game.get(game.id)
@@ -112,7 +120,12 @@ def player_profile(player_id):
             game_open = game.result is None and ensure_aware_utc(game.game_date) > now
             game_visible = is_self or not game_open
             games_rows.append(
-                {"game": game, "prediction": game_pred if game_visible else None, "hidden": not game_visible}
+                {
+                    "game": game,
+                    "game_number": game_numbers[game.id],
+                    "prediction": game_pred if game_visible else None,
+                    "hidden": not game_visible,
+                }
             )
 
         if winner_pred is None and score_pred is None and not games_rows:

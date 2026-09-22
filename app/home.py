@@ -86,12 +86,20 @@ def index():
         winner_pred = own_by_series.get((series.id, "series_winner"))
         score_pred = own_by_series.get((series.id, "series_score"))
 
+        # 1-indexed position of each game within the series in chronological
+        # order (Game 1 .. Game 7), independent of series_games' own display
+        # order (most recent first, see the query above).
+        game_numbers = {
+            gm.id: n for n, gm in enumerate(sorted(series_games, key=lambda gm: gm.game_date), start=1)
+        }
+
         games_rows = []
         for game in series_games:
             open_ = game.result is None and ensure_aware_utc(game.game_date) > now
             games_rows.append(
                 {
                     "game": game,
+                    "game_number": game_numbers[game.id],
                     "prediction": own_by_game.get(game.id),
                     "open": open_,
                     "all_predictions": other_by_game.get(game.id, []) if not open_ else [],
