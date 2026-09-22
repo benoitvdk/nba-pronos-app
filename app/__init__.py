@@ -39,10 +39,11 @@ def create_app(config_class=Config):
     # (see app/team_colors.py) - available as `{{ team_name | team_color }}`
     # and `{{ team_name | team_text_color }}` in every template without
     # every route having to pass them explicitly.
-    from app.team_colors import team_color, team_text_color
+    from app.team_colors import team_color, team_text_color, team_short_name
 
     app.jinja_env.filters["team_color"] = team_color
     app.jinja_env.filters["team_text_color"] = team_text_color
+    app.jinja_env.filters["team_short_name"] = team_short_name
 
     @app.get("/health")
     def health():

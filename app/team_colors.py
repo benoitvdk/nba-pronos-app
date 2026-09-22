@@ -205,3 +205,55 @@ def team_text_color(team_name):
     if secondary and _contrast_ratio(primary, secondary) >= MIN_TEXT_CONTRAST:
         return secondary
     return "#111111" if _relative_luminance(primary) > 0.5 else "#ffffff"
+
+
+# Nickname only (no city), used everywhere a prediction is shown so the UI
+# stays light - e.g. "Philadelphia 76ers" -> "76ers". Kept as an explicit
+# table rather than "take the last word of the full name" because that
+# naive split breaks multi-word nicknames like "Trail Blazers".
+TEAM_SHORT_NAMES = {
+    "Atlanta Hawks": "Hawks",
+    "Boston Celtics": "Celtics",
+    "Brooklyn Nets": "Nets",
+    "Charlotte Hornets": "Hornets",
+    "Chicago Bulls": "Bulls",
+    "Cleveland Cavaliers": "Cavaliers",
+    "Dallas Mavericks": "Mavericks",
+    "Denver Nuggets": "Nuggets",
+    "Detroit Pistons": "Pistons",
+    "Golden State Warriors": "Warriors",
+    "Houston Rockets": "Rockets",
+    "Indiana Pacers": "Pacers",
+    "LA Clippers": "Clippers",
+    "Los Angeles Clippers": "Clippers",  # alias, see TEAM_COLORS
+    "Los Angeles Lakers": "Lakers",
+    "Memphis Grizzlies": "Grizzlies",
+    "Miami Heat": "Heat",
+    "Milwaukee Bucks": "Bucks",
+    "Minnesota Timberwolves": "Timberwolves",
+    "New Orleans Pelicans": "Pelicans",
+    "New York Knicks": "Knicks",
+    "Oklahoma City Thunder": "Thunder",
+    "Orlando Magic": "Magic",
+    "Philadelphia 76ers": "76ers",
+    "Phoenix Suns": "Suns",
+    "Portland Trail Blazers": "Trail Blazers",
+    "Sacramento Kings": "Kings",
+    "San Antonio Spurs": "Spurs",
+    "Toronto Raptors": "Raptors",
+    "Utah Jazz": "Jazz",
+    "Washington Wizards": "Wizards",
+}
+
+
+def team_short_name(team_name):
+    """Nickname only, dropping the city (e.g. "Philadelphia 76ers" ->
+    "76ers"), for anywhere a prediction is displayed - keeps the UI light
+    per the product decision to drop city names everywhere. Falls back to
+    the last word of an unknown team name (still better than nothing) and
+    never raises, same defensive pattern as team_color/team_text_color."""
+    if team_name in TEAM_SHORT_NAMES:
+        return TEAM_SHORT_NAMES[team_name]
+    if not team_name:
+        return team_name
+    return team_name.rsplit(" ", 1)[-1]
