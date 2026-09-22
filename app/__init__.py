@@ -35,12 +35,14 @@ def create_app(config_class=Config):
     app.register_blueprint(leaderboard_bp)
     app.register_blueprint(bracket_bp)
 
-    # Decorative team-color dot/border on prediction buttons and matchup
-    # headers (see app/team_colors.py) - available as `{{ team_name | team_color }}`
-    # in every template without every route having to pass it explicitly.
-    from app.team_colors import team_color
+    # Decorative team-color fill on prediction buttons and matchup headers
+    # (see app/team_colors.py) - available as `{{ team_name | team_color }}`
+    # and `{{ team_name | team_text_color }}` in every template without
+    # every route having to pass them explicitly.
+    from app.team_colors import team_color, team_text_color
 
     app.jinja_env.filters["team_color"] = team_color
+    app.jinja_env.filters["team_text_color"] = team_text_color
 
     @app.get("/health")
     def health():
