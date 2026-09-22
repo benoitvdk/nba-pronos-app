@@ -8,5 +8,14 @@ INSERT INTO scoring_config (engine, rule_key, rule_value) VALUES
   ('bracket', 'nba_champion_points', 10),
   ('bracket', 'finals_mvp_points', 5),
   ('bracket', 'east_champion_points', 5),
-  ('bracket', 'west_champion_points', 5)
+  ('bracket', 'west_champion_points', 5),
+  ('bracket', 'cup_champion_points', 15),
+  ('bracket', 'cup_finalist_east_points', 5),
+  ('bracket', 'cup_finalist_west_points', 5),
+  ('bracket', 'cup_east_group_a_winner_points', 3),
+  ('bracket', 'cup_east_group_b_winner_points', 3),
+  ('bracket', 'cup_east_group_c_winner_points', 3),
+  ('bracket', 'cup_west_group_a_winner_points', 3),
+  ('bracket', 'cup_west_group_b_winner_points', 3),
+  ('bracket', 'cup_west_group_c_winner_points', 3)
 ON CONFLICT (engine, rule_key) DO NOTHING;

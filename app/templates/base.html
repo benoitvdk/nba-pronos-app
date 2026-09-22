@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#c8102e">
-  <title>{% block title %}NBA Playoffs Pronos{% endblock %}</title>
+  <title>{% block title %}{{ 'NBA Cup Pronos' if config.APP_MODE == 'nba_cup' else 'NBA Playoffs Pronos' }}{% endblock %}</title>
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <link rel="icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
@@ -13,13 +13,13 @@
 <body>
   {% if g.player %}
   <header class="topbar">
-    <span class="brand">🏀 NBA Playoffs Pronos</span>
+    <span class="brand">🏀 {{ 'NBA Cup Pronos' if config.APP_MODE == 'nba_cup' else 'NBA Playoffs Pronos' }}</span>
     <span class="player-info">{{ g.player.name }} · <a href="{{ url_for('auth.logout') }}">déconnexion</a></span>
   </header>
   <nav class="tabs">
     <a href="{{ url_for('home.index') }}" class="{{ 'active' if request.endpoint == 'home.index' }}">🎯 Pronostics</a>
     <a href="{{ url_for('leaderboard.index') }}" class="{{ 'active' if request.endpoint == 'leaderboard.index' }}">🏆 Classement</a>
-    <a href="{{ url_for('bracket.index') }}" class="{{ 'active' if request.endpoint == 'bracket.index' }}">📋 Bracket</a>
+    <a href="{{ url_for('bracket.index') }}" class="{{ 'active' if request.endpoint == 'bracket.index' }}">📋 {{ 'Avant-Cup' if config.APP_MODE == 'nba_cup' else 'Bracket' }}</a>
   </nav>
   {% endif %}
 

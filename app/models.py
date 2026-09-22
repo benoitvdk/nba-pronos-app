@@ -12,6 +12,15 @@ hold together - to confirm with Benoit:
 - `Series.winner_odds` and `Series.score_odds` are stored as JSON rather
   than a plain number, since there's one odds value per team (winner_odds)
   and one per possible exact score, e.g. 4-0, 4-1, 4-2, 4-3 (score_odds).
+
+NBA Cup addition - to confirm with Benoit: the app never runs the playoffs
+and the Cup at the same time (see APP_MODE in app/config.py), so rather
+than a whole parallel set of tables, a Cup group-stage or knockout matchup
+is just another `Series` row, tagged via `round` (values prefixed "cup_",
+see app/scoring.py CUP_ROUND_PREFIX) - always a "series" of exactly one
+game, since the Cup never has a best-of-N round. `Series.group_name` is
+only ever set for the group stage, to remember which of the 6 groups a
+matchup belongs to (see app/ingestion.py sync_cup_games_from_balldontlie).
 """
 from datetime import datetime, timezone
 
@@ -64,6 +73,9 @@ class Series(db.Model):
     winner_odds = db.Column(db.JSON, nullable=True)
     # score_odds: {"4-0": 6.5, "4-1": 5.0, "4-2": 3.5, "4-3": 3.0} (key = winning team-losing team score)
     score_odds = db.Column(db.JSON, nullable=True)
+    # NBA Cup group stage only (round == "cup_group"), e.g. "Groupe A (Est)" -
+    # always NULL for a playoff series or a Cup knockout round.
+    group_name = db.Column(db.String(64), nullable=True)
 
     games = db.relationship("Game", back_populates="series", lazy="dynamic")
     predictions = db.relationship("Prediction", back_populates="series", lazy="dynamic")

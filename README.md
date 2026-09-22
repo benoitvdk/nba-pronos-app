@@ -85,6 +85,71 @@ tested once the 2026 playoffs start.
 shown by `add_player` (e.g. `http://127.0.0.1:5000/login/<code>`) logs in
 directly, no password.
 
+## NBA Cup mode
+
+The app can also run the NBA Cup (in-season tournament) instead of the
+playoffs - never both at the same time. Which one is live is controlled by
+the `APP_MODE` environment variable (`playoffs` or `nba_cup`, default
+`playoffs`): it switches the labels shown everywhere (title, nav, bracket
+page) and which `Series`/`Game` rows show up on the dashboard and
+leaderboard. Switching modes is just changing `APP_MODE` (`.env` locally,
+the Render dashboard in production) and redeploying - the same database
+can be reused across a season (Cup in November-December, then playoffs in
+April), predictions and points from one mode never leak into the other's
+leaderboard.
+
+The two competitions are modeled differently under the hood, because a Cup
+round is always a single game (round-robin group stage, then
+single-elimination knockout) rather than a best-of-7 series:
+
+- A Cup matchup is still stored as a `Series` row (to reuse the whole
+  prediction/scoring pipeline), tagged via `round` with a `cup_` prefix
+  (`cup_group`, `cup_quarterfinal`, `cup_semifinal`, `cup_final`) - but
+  it's always a "series" of exactly one game.
+- Unlike the playoffs, **you don't need to create these series by hand**:
+  `scripts/ingest.py --season-type ist` creates them automatically the
+  first time it sees a given pairing (see `app/ingestion.py`
+  `sync_cup_games_from_balldontlie`). You do need to tell it which round
+  you're ingesting, since balldontlie's `ist` season type covers the whole
+  Cup without saying which round a game belongs to:
+
+  ```bash
+  # Group stage - pass a JSON file mapping each team's full name to its
+  # group (the NBA publishes the 6 groups before the season; balldontlie/
+  # theoddsapi don't expose them, so this has to be maintained by hand,
+  # once per season):
+  python -m scripts.ingest --season 2026 --season-type ist --stage cup_group --groups-file cup_groups.json
+
+  # Knockout rounds, once the NBA has set the matchups - no groups file needed:
+  python -m scripts.ingest --season 2026 --season-type ist --stage cup_quarterfinal
+  python -m scripts.ingest --season 2026 --season-type ist --stage cup_semifinal
+  python -m scripts.ingest --season 2026 --season-type ist --stage cup_final
+  ```
+
+  `cup_groups.json` example:
+
+  ```json
+  {
+    "Boston Celtics": "Groupe A (Est)",
+    "Miami Heat": "Groupe A (Est)"
+  }
+  ```
+
+- Only game-winner predictions exist for a Cup round (no series
+  winner/exact-score prediction - meaningless for a single game); the
+  dashboard hides that section automatically for a Cup round.
+- Pre-Cup bonus predictions (`/bracket/`) become: NBA Cup champion,
+  Eastern/Western finalist, and the 6 group winners, instead of the
+  playoffs' champion/MVP/conference-champion categories (see
+  `app/bracket.py` `CUP_CATEGORIES` - provisional point values in
+  `scripts/init_db.py` / `sql/seed_scoring_config.sql`, adjust as needed).
+- `.github/workflows/ingest.yml` runs a fixed command - update its `Run
+  ingestion` step (add `--season-type ist --stage ... [--groups-file ...]`)
+  when switching to Cup mode, and back when switching to playoffs.
+- If your database was created before this addition, also run
+  `sql/004_add_group_name_to_series.sql` in Neon's SQL Editor (a fresh
+  database via `init_db.py` already has the column).
+
 ## Deploying to Render
 
 Deploy via Blueprint (`render.yaml` at the repo root): on render.com,
@@ -92,7 +157,10 @@ Deploy via Blueprint (`render.yaml` at the repo root): on render.com,
 `render.yaml` and proposes the `nba-playoffs-pronos` service. `SECRET_KEY`
 is generated automatically; `DATABASE_URL`, `ODDS_API_KEY` and
 `BALLDONTLIE_API_KEY` need to be filled in manually in the Render
-dashboard (same values as in the local `.env`).
+dashboard (same values as in the local `.env`). `APP_MODE` defaults to
+`playoffs` in `render.yaml` - switch it to `nba_cup` in the Render
+dashboard (see "NBA Cup mode" above) when it's time, no code change
+needed.
 
 Render's free plan puts the service to sleep after 15 minutes of
 inactivity (30 to 60 seconds wake-up on the next load). For the GitHub
@@ -133,22 +201,27 @@ than just `/static/`.
 ```
 app/
   __init__.py      Flask application factory
-  config.py        config read from environment variables
+  config.py        config read from environment variables (incl. APP_MODE)
   extensions.py    shared SQLAlchemy instance
-  models.py        tables: players, series, games, predictions,
-                    scoring_config, bracket_predictions
+  models.py        tables: players, series (+ group_name for the Cup),
+                    games, predictions, scoring_config, bracket_predictions
   auth.py          login via link/access code (no password)
   home.py          dashboard: open + already-submitted predictions
   predictions.py   prediction submission (game, series winner/score)
-  leaderboard.py   leaderboard of all players
-  bracket.py       "pre-playoffs" predictions (champion, MVP, etc.)
+  leaderboard.py   leaderboard of all players, scoped to the current mode
+  bracket.py       pre-tournament predictions - categories depend on
+                    APP_MODE (champion/MVP/conf. champions, or Cup
+                    champion/finalists/group winners)
   time_utils.py    datetime normalization (SQLite vs Postgres)
   templates/       login.html, home.html, base.html, leaderboard.html,
                     bracket.html
   static/          manifest.json, sw.js, offline.html, icons/ (PWA)
-  scoring.py       pure logic for the 2 scoring engines (testable alone)
+  scoring.py       pure logic for the 2 scoring engines, + is_cup_round /
+                    games_to_win_for_round (testable alone)
   scoring_service.py  wires scoring.py to real data (DB)
-  ingestion.py     turns API responses into up-to-date Game rows (testable alone)
+  ingestion.py     turns API responses into up-to-date Game rows - playoffs
+                    (series must exist) and NBA Cup (series auto-created),
+                    testable alone
   clients/         HTTP clients balldontlie.py and odds_api.py
 scripts/
   init_db.py       creates the tables + seeds scoring_config
@@ -156,13 +229,16 @@ scripts/
   run_scoring.py   recomputes points for game/series predictions
   score_bracket.py scores a bracket category once the result is known
   ingest.py        fetches results + odds and updates the database
+                    (--season-type ist --stage ... for the Cup)
 sql/
   schema.sql, seed_scoring_config.sql, 002_add_external_id_to_games.sql,
-  003_add_season_to_series.sql
+  003_add_season_to_series.sql, 004_add_group_name_to_series.sql
 tests/
-  test_scoring.py    unit tests for the 2 scoring engines
-  test_ingestion.py  ingestion tests (mocked APIs, no network calls)
-  test_web.py        web route tests (predictions, leaderboard, bracket)
+  test_scoring.py    unit tests for the 2 scoring engines + Cup helpers
+  test_ingestion.py  ingestion tests (mocked APIs, no network calls),
+                    playoffs and Cup
+  test_web.py        web route tests (predictions, leaderboard, bracket),
+                    playoffs and Cup mode
 .github/workflows/
   ingest.yml       GitHub Actions cron (free) for automatic ingestion
 render.yaml        Render Blueprint (web service + environment variables)
@@ -180,4 +256,6 @@ wsgi.py            entry point for gunicorn / Render
 - [ ] Clean up test series before the real 2026-27 season
 - [ ] Average odds across multiple bookmakers instead of only taking the
       first one available (`app/ingestion.py`, `sync_odds_from_oddsapi`)
-- [ ] Support another competition alongside the playoffs: the NBA Cup
+- [x] Support the NBA Cup as an alternate mode (`APP_MODE=nba_cup`, never
+      at the same time as the playoffs - see "NBA Cup mode" above) - built
+      on `feature/nba-cup`, not yet run against the real 2026-27 Cup

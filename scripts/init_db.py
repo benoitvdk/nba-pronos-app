@@ -39,6 +39,19 @@ DEFAULT_SCORING_CONFIG = [
     ("bracket", "finals_mvp_points", 5),
     ("bracket", "east_champion_points", 5),
     ("bracket", "west_champion_points", 5),
+    # pre-Cup bracket (to adjust - provisional values, see app/bracket.py
+    # CUP_CATEGORIES). Cup game-winner points reuse "game_winner_points"
+    # above (same classic/odds_based rules) since a Cup round is always a
+    # single game - see app/scoring.py.is_cup_round.
+    ("bracket", "cup_champion_points", 15),
+    ("bracket", "cup_finalist_east_points", 5),
+    ("bracket", "cup_finalist_west_points", 5),
+    ("bracket", "cup_east_group_a_winner_points", 3),
+    ("bracket", "cup_east_group_b_winner_points", 3),
+    ("bracket", "cup_east_group_c_winner_points", 3),
+    ("bracket", "cup_west_group_a_winner_points", 3),
+    ("bracket", "cup_west_group_b_winner_points", 3),
+    ("bracket", "cup_west_group_c_winner_points", 3),
 ]
 
 

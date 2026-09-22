@@ -117,3 +117,42 @@ def test_score_series_winner(app, player):
 
     assert pred.is_correct is True
     assert pred.points_earned == 1
+
+
+# --- NBA Cup: single-game "series" -----------------------------------------
+
+def test_score_game_predictions_works_for_a_cup_round(app, player):
+    """Cup rounds only ever carry game_winner predictions (see
+    app/bracket.py, app/ingestion.py.sync_cup_games_from_balldontlie) - this
+    is the same code path as a playoff game, just under a "cup_group"
+    round, so it should score exactly the same way."""
+    series = Series(round="cup_group", team_a="Team A", team_b="Team B", group_name="Groupe A (Est)")
+    db.session.add(series)
+    db.session.flush()
+    game = Game(series_id=series.id, team_a="Team A", team_b="Team B", game_date=PAST, result="team_a")
+    db.session.add(game)
+    db.session.commit()
+    pred = Prediction(player_id=player.id, game_id=game.id, prediction_type="game_winner", predicted_value="team_a")
+    db.session.add(pred)
+    db.session.commit()
+
+    score_game_predictions(engine="classic")
+
+    assert pred.is_correct is True
+    assert pred.points_earned == 1
+
+
+def test_score_series_predictions_treats_a_cup_series_as_finished_after_one_game(app, player):
+    """A Cup round's "series" (see games_to_win_for_round) is finished the
+    moment its single game has a result - it never carries a
+    series_winner/series_score prediction in practice, so this just checks
+    the finished-series loop doesn't choke on it and scores 0 predictions."""
+    series = Series(round="cup_quarterfinal", team_a="Team A", team_b="Team B")
+    db.session.add(series)
+    db.session.flush()
+    db.session.add(Game(series_id=series.id, team_a="Team A", team_b="Team B", game_date=PAST, result="team_a"))
+    db.session.commit()
+
+    updated = score_series_predictions(engine="classic")
+
+    assert updated == 0

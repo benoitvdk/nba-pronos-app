@@ -1,47 +1,79 @@
 """Leaderboard: sum of points (game/series predictions + bracket) per
 player, across all engines (points are already computed with the engine
-chosen at the time of scripts.run_scoring / scripts.score_bracket)."""
+chosen at the time of scripts.run_scoring / scripts.score_bracket).
+
+Per the "separate leaderboard" decision for the NBA Cup: playoffs and Cup
+predictions can sit in the same database (the app never runs both at
+once - see APP_MODE in app/config.py), but their points must never be
+summed together, so every query here is scoped to the rounds/categories of
+the CURRENT competition only (see app/scoring.py.is_cup_round and
+app/bracket.py.get_categories)."""
 from collections import defaultdict
 from datetime import datetime, timezone
 
-from flask import Blueprint, g, render_template
+from flask import Blueprint, current_app, g, render_template
 from sqlalchemy import func
 
 from app.auth import login_required
-from app.bracket import CATEGORIES
+from app.bracket import get_categories
+from app.bracket import is_locked as bracket_is_locked
 from app.extensions import db
 from app.models import BracketPrediction, Game, Player, Prediction, Series
-from app.scoring import series_status
+from app.scoring import CUP_ROUND_PREFIX, games_to_win_for_round, is_cup_round, series_status
 from app.time_utils import ensure_aware_utc
 
 bp = Blueprint("leaderboard", __name__)
 
 
+def _cup_mode():
+    return current_app.config.get("APP_MODE") == "nba_cup"
+
+
+def _round_filter():
+    return Series.round.like(f"{CUP_ROUND_PREFIX}%") if _cup_mode() else ~Series.round.like(f"{CUP_ROUND_PREFIX}%")
+
+
 def compute_standings():
-    pred_totals = dict(
+    # Game-level predictions (game_id set) are joined through to Series via
+    # their Game; series-level predictions (series_id set, playoffs only in
+    # practice) are joined to Series directly - a prediction is never both,
+    # so summing the two groups per player can't double count.
+    game_totals = (
         db.session.query(Prediction.player_id, func.coalesce(func.sum(Prediction.points_earned), 0))
+        .join(Game, Prediction.game_id == Game.id)
+        .join(Series, Game.series_id == Series.id)
+        .filter(_round_filter())
         .group_by(Prediction.player_id)
         .all()
     )
+    series_totals = (
+        db.session.query(Prediction.player_id, func.coalesce(func.sum(Prediction.points_earned), 0))
+        .join(Series, Prediction.series_id == Series.id)
+        .filter(_round_filter())
+        .group_by(Prediction.player_id)
+        .all()
+    )
+    pred_totals = defaultdict(float)
+    for player_id, total in [*game_totals, *series_totals]:
+        pred_totals[player_id] += float(total or 0)
+
+    category_keys = [key for key, _label in get_categories()]
     bracket_totals = dict(
         db.session.query(
             BracketPrediction.player_id, func.coalesce(func.sum(BracketPrediction.points_earned), 0)
         )
+        .filter(BracketPrediction.category.in_(category_keys))
         .group_by(BracketPrediction.player_id)
         .all()
     )
 
     rows = []
     for player in Player.query.all():
-        total = float(pred_totals.get(player.id) or 0) + float(bracket_totals.get(player.id) or 0)
+        total = pred_totals.get(player.id, 0.0) + float(bracket_totals.get(player.id) or 0)
         rows.append({"player": player, "total": total})
 
     rows.sort(key=lambda r: r["total"], reverse=True)
     return rows
-
-
-def _bracket_is_locked():
-    return db.session.query(Game.query.filter(Game.result.isnot(None)).exists()).scalar()
 
 
 @bp.route("/classement")
@@ -62,12 +94,12 @@ def player_profile(player_id):
     is_self = g.player.id == player.id
     now = datetime.now(timezone.utc)
 
-    bracket_visible = is_self or _bracket_is_locked()
+    bracket_visible = is_self or bracket_is_locked()
     bracket_preds = {
         p.category: p for p in BracketPrediction.query.filter_by(player_id=player.id).all()
     }
     bracket_rows = []
-    for key, label in CATEGORIES:
+    for key, label in get_categories():
         pred = bracket_preds.get(key)
         if pred is None:
             continue
@@ -77,7 +109,10 @@ def player_profile(player_id):
 
     # Batched instead of querying per series/game (same fix as app/home.py):
     # one query for every series' games, one for this player's predictions.
-    series_list = Series.ordered_recent_first().all()
+    cup_mode = _cup_mode()
+    series_list = [
+        series for series in Series.ordered_recent_first().all() if is_cup_round(series.round) == cup_mode
+    ]
     series_ids = [series.id for series in series_list]
 
     games_by_series = defaultdict(list)
@@ -98,7 +133,7 @@ def player_profile(player_id):
         started = any(gm.result is not None for gm in series_games)
         wins_a = sum(1 for gm in series_games if gm.result == "team_a")
         wins_b = sum(1 for gm in series_games if gm.result == "team_b")
-        finished = series_status(wins_a, wins_b)["finished"]
+        finished = series_status(wins_a, wins_b, games_to_win=games_to_win_for_round(series.round))["finished"]
         series_visible = is_self or started
 
         winner_pred = preds_by_series.get((series.id, "series_winner"))

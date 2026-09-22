@@ -17,12 +17,12 @@ independent of how many players/series/games exist."""
 from collections import defaultdict
 from datetime import datetime, timezone
 
-from flask import Blueprint, g, render_template
+from flask import Blueprint, current_app, g, render_template
 
 from app.auth import login_required
 from app.models import Game, Player, Prediction, Series
 from app.predictions import VALID_SCORES
-from app.scoring import series_status
+from app.scoring import games_to_win_for_round, is_cup_round, series_status
 from app.time_utils import ensure_aware_utc
 
 bp = Blueprint("home", __name__)
@@ -38,7 +38,10 @@ def index():
     now = datetime.now(timezone.utc)
     player = g.player
 
-    series_list = Series.ordered_recent_first().all()
+    cup_mode = current_app.config.get("APP_MODE") == "nba_cup"
+    series_list = [
+        series for series in Series.ordered_recent_first().all() if is_cup_round(series.round) == cup_mode
+    ]
     series_ids = [series.id for series in series_list]
 
     # Query 1: every game for every series in one go (most recent first, so
@@ -81,7 +84,7 @@ def index():
         started = any(gm.result is not None for gm in series_games)
         wins_a = sum(1 for gm in series_games if gm.result == "team_a")
         wins_b = sum(1 for gm in series_games if gm.result == "team_b")
-        status = series_status(wins_a, wins_b)
+        status = series_status(wins_a, wins_b, games_to_win=games_to_win_for_round(series.round))
 
         winner_pred = own_by_series.get((series.id, "series_winner"))
         score_pred = own_by_series.get((series.id, "series_score"))
@@ -122,6 +125,7 @@ def index():
                 "series": series,
                 "started": started,
                 "finished": status["finished"],
+                "is_single_game": is_cup_round(series.round),
                 "wins_a": wins_a,
                 "wins_b": wins_b,
                 "games": games_rows,

@@ -14,7 +14,11 @@ from app import create_app  # noqa: E402
 from app.clients.balldontlie import fetch_games  # noqa: E402
 from app.clients.odds_api import fetch_nba_odds  # noqa: E402
 from app.extensions import db  # noqa: E402
-from app.ingestion import sync_games_from_balldontlie, sync_odds_from_oddsapi  # noqa: E402
+from app.ingestion import (  # noqa: E402
+    sync_cup_games_from_balldontlie,
+    sync_games_from_balldontlie,
+    sync_odds_from_oddsapi,
+)
 from app.models import Game, Series  # noqa: E402
 
 
@@ -157,6 +161,72 @@ def test_sync_skips_ambiguous_matchup_without_season_match(app):
     raw = [_raw_game(106, "Boston Celtics", "Denver Nuggets")]  # season=2024, matches neither
     created, updated, skipped = sync_games_from_balldontlie(raw)
     assert (created, updated, skipped) == (0, 0, 1)
+
+
+# --- sync_cup_games_from_balldontlie ---------------------------------------
+
+def test_sync_cup_creates_series_and_group_name_on_first_sight(app):
+    raw = [_raw_game(301, "Boston Celtics", "Miami Heat", status_state="scheduled")]
+    groups = {"Boston Celtics": "Groupe A (Est)", "Miami Heat": "Groupe A (Est)"}
+
+    created_series, created_games, updated_games = sync_cup_games_from_balldontlie(
+        raw, stage="cup_group", groups=groups
+    )
+
+    assert (created_series, created_games, updated_games) == (1, 1, 0)
+    series = Series.query.filter_by(round="cup_group").one()
+    assert {series.team_a, series.team_b} == {"Boston Celtics", "Miami Heat"}
+    assert series.group_name == "Groupe A (Est)"
+    game = Game.query.filter_by(external_id="301").first()
+    assert game.series_id == series.id
+
+
+def test_sync_cup_is_idempotent_no_duplicate_series_or_game(app):
+    raw = [_raw_game(302, "Boston Celtics", "Miami Heat", status_state="scheduled")]
+    sync_cup_games_from_balldontlie(raw, stage="cup_group")
+    raw[0].update(status_state="final", home_team_score=100, visitor_team_score=90)
+
+    created_series, created_games, updated_games = sync_cup_games_from_balldontlie(raw, stage="cup_group")
+
+    assert (created_series, created_games, updated_games) == (0, 0, 1)
+    assert Series.query.filter_by(round="cup_group").count() == 1
+    assert Game.query.filter_by(external_id="302").first().result == "team_a"
+
+
+def test_sync_cup_does_not_reuse_a_playoff_series_between_the_same_teams(app):
+    # Same two teams, but this is a playoff series - the Cup ingestion must
+    # never attach a group-stage game to it.
+    db.session.add(Series(round="finals", team_a="Boston Celtics", team_b="Miami Heat"))
+    db.session.commit()
+
+    raw = [_raw_game(303, "Boston Celtics", "Miami Heat", status_state="scheduled")]
+    created_series, created_games, updated_games = sync_cup_games_from_balldontlie(raw, stage="cup_group")
+
+    assert created_series == 1
+    assert Series.query.filter_by(round="cup_group").count() == 1
+    assert Series.query.filter_by(round="finals").count() == 1
+
+
+def test_sync_cup_group_name_only_set_for_group_stage(app):
+    raw = [_raw_game(304, "Boston Celtics", "Miami Heat", status_state="scheduled")]
+    groups = {"Boston Celtics": "Groupe A (Est)"}
+
+    sync_cup_games_from_balldontlie(raw, stage="cup_quarterfinal", groups=groups)
+
+    series = Series.query.filter_by(round="cup_quarterfinal").one()
+    assert series.group_name is None
+
+
+def test_sync_cup_team_missing_from_groups_map_leaves_group_name_none(app):
+    raw = [_raw_game(305, "Boston Celtics", "Miami Heat", status_state="scheduled")]
+    created_series, _, _ = sync_cup_games_from_balldontlie(raw, stage="cup_group", groups={})
+    assert created_series == 1
+    assert Series.query.filter_by(round="cup_group").one().group_name is None
+
+
+def test_sync_cup_rejects_unknown_stage(app):
+    with pytest.raises(ValueError):
+        sync_cup_games_from_balldontlie([], stage="cup_wildcard")
 
 
 # --- sync_odds_from_oddsapi ------------------------------------------------

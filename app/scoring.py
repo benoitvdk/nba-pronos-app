@@ -7,10 +7,29 @@ to the database happens in app/scoring_service.py.
 
 ENGINES = ("classic", "odds_based")
 
+# NBA Cup rounds (see app/models.py Series.round, app/ingestion.py
+# sync_cup_games_from_balldontlie): group stage and every knockout round
+# are single games, never a best-of-N series like the playoffs - every Cup
+# round value uses this prefix so the rest of the app can tell the two
+# competitions' rounds apart from the round string alone, with no separate
+# "competition" column needed.
+CUP_ROUND_PREFIX = "cup_"
+
 
 def _check_engine(engine):
     if engine not in ENGINES:
         raise ValueError(f"unknown engine: {engine!r} (expected: {ENGINES})")
+
+
+def is_cup_round(round_name):
+    """True for any NBA Cup round (group stage or knockout)."""
+    return round_name.startswith(CUP_ROUND_PREFIX)
+
+
+def games_to_win_for_round(round_name):
+    """Wins needed to decide a "series" for this round: 1 for any Cup
+    round (a single game decides it), 4 (best-of-7) for a playoff round."""
+    return 1 if is_cup_round(round_name) else 4
 
 
 def series_status(wins_a, wins_b, games_to_win=4):

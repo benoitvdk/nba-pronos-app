@@ -20,14 +20,19 @@
         <div class="series-head-top">
           <div>
             <span class="round-tag">{{ series.round | replace('_', ' ') | title }}</span>
+            {% if series.group_name %}
+              <span class="round-tag group-tag">{{ series.group_name }}</span>
+            {% endif %}
             <div class="matchup">
               <span class="team-dot" style="background:{{ series.team_a | team_color }}"></span>{{ series.team_a }}<span class="vs">vs</span><span class="team-dot" style="background:{{ series.team_b | team_color }}"></span>{{ series.team_b }}
             </div>
           </div>
           <div class="series-head-right">
-            {% if row.started %}
+            {% if row.started and not row.is_single_game %}
               {# Actual games-won score (not a pronostic) - only meaningful
-                 once the series has started. #}
+                 once the series has started, and only for a best-of-N
+                 playoff series: a single-game Cup round already shows its
+                 result in the "Matchs" section below. #}
               <span class="pill series-score">{{ row.wins_a }}-{{ row.wins_b }}</span>
             {% endif %}
             {% if row.finished %}
@@ -47,6 +52,12 @@
         {% endif %}
       </summary>
 
+      {# The series-level winner/exact-score prediction only makes sense
+         for a best-of-N playoff series - a Cup round (group stage or
+         knockout) is a single game, already covered by the game-level
+         prediction in the "Matchs" section below, so this whole block is
+         skipped for it (see row.is_single_game, app/home.py). #}
+      {% if not row.is_single_game %}
       <div class="section">
         <div class="section-label">Pronostic de série</div>
 
@@ -146,6 +157,7 @@
           {% endif %}
         {% endif %}
       </div>
+      {% endif %}
 
       {# --- games in the series --- #}
       {% if row.games %}

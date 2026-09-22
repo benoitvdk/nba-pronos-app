@@ -16,3 +16,9 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     ODDS_API_KEY = os.environ.get("ODDS_API_KEY", "")
+
+    # "playoffs" or "nba_cup" - the app only ever runs one competition at a
+    # time (see README), this picks which one: labels, bracket categories
+    # (app/bracket.py) and which Series/Game rows show up anywhere in the
+    # app (app/home.py, app/leaderboard.py - see app/scoring.py.is_cup_round).
+    APP_MODE = os.environ.get("APP_MODE", "playoffs")

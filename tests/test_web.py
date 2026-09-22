@@ -415,6 +415,112 @@ def test_dashboard_orders_series_most_recent_first(app, client, player):
     assert body.index("Boston Celtics") < body.index("Miami Heat")
 
 
+# --- NBA Cup mode -----------------------------------------------------------
+
+def test_dashboard_cup_mode_hides_series_section_for_single_game_round(app, client, player):
+    series = Series(round="cup_group", team_a="Boston Celtics", team_b="Miami Heat", group_name="Groupe A (Est)")
+    db.session.add(series)
+    db.session.commit()
+    db.session.add(Game(series_id=series.id, team_a="Boston Celtics", team_b="Miami Heat", game_date=FUTURE))
+    db.session.commit()
+
+    app.config["APP_MODE"] = "nba_cup"
+    _login(client, player)
+    resp = client.get("/")
+    body = resp.data.decode("utf-8")
+
+    assert "Groupe A (Est)" in body
+    assert "Pronostic de série" not in body  # single-game round: no series winner/score prediction
+
+
+def test_dashboard_playoffs_mode_still_shows_series_section(app, client, player):
+    series = Series(round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
+    db.session.add(series)
+    db.session.commit()
+
+    _login(client, player)
+    resp = client.get("/")
+
+    assert "Pronostic de série".encode() in resp.data
+
+
+def test_dashboard_only_shows_series_matching_current_mode(app, client, player):
+    playoffs_series = Series(round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
+    cup_series = Series(round="cup_group", team_a="Miami Heat", team_b="Orlando Magic")
+    db.session.add_all([playoffs_series, cup_series])
+    db.session.commit()
+
+    _login(client, player)
+    playoffs_body = client.get("/").data.decode("utf-8")
+    assert "Denver Nuggets" in playoffs_body
+    assert "Orlando Magic" not in playoffs_body
+
+    app.config["APP_MODE"] = "nba_cup"
+    cup_body = client.get("/").data.decode("utf-8")
+    assert "Orlando Magic" in cup_body
+    assert "Denver Nuggets" not in cup_body
+
+
+def test_bracket_categories_switch_with_app_mode(app, client, player):
+    app.config["APP_MODE"] = "nba_cup"
+    _login(client, player)
+    resp = client.get("/bracket/")
+
+    assert "Vainqueur de la NBA Cup".encode() in resp.data
+    assert "Champion NBA".encode() not in resp.data
+
+
+def test_bracket_submission_uses_cup_categories_when_in_cup_mode(app, client, player):
+    app.config["APP_MODE"] = "nba_cup"
+    _login(client, player)
+    resp = client.post("/bracket/", data={"cup_champion": "Boston Celtics"}, follow_redirects=True)
+
+    assert resp.status_code == 200
+    pred = BracketPrediction.query.filter_by(player_id=player.id, category="cup_champion").first()
+    assert pred is not None
+    assert pred.predicted_value == "Boston Celtics"
+
+
+def test_leaderboard_keeps_cup_and_playoffs_points_separate(app, client, player):
+    playoffs_series = Series(round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
+    cup_series = Series(round="cup_group", team_a="Miami Heat", team_b="Orlando Magic")
+    db.session.add_all([playoffs_series, cup_series])
+    db.session.commit()
+    playoffs_game = Game(
+        series_id=playoffs_series.id, team_a="Boston Celtics", team_b="Denver Nuggets",
+        game_date=PAST, result="team_a",
+    )
+    cup_game = Game(
+        series_id=cup_series.id, team_a="Miami Heat", team_b="Orlando Magic",
+        game_date=PAST, result="team_a",
+    )
+    db.session.add_all([playoffs_game, cup_game])
+    db.session.commit()
+    db.session.add(
+        Prediction(
+            player_id=player.id, game_id=playoffs_game.id, prediction_type="game_winner",
+            predicted_value="team_a", is_correct=True, points_earned=1,
+        )
+    )
+    db.session.add(
+        Prediction(
+            player_id=player.id, game_id=cup_game.id, prediction_type="game_winner",
+            predicted_value="team_a", is_correct=True, points_earned=5,
+        )
+    )
+    db.session.commit()
+
+    _login(client, player)
+    playoffs_resp = client.get("/classement")
+    assert b"1.0" in playoffs_resp.data
+    assert b"6.0" not in playoffs_resp.data
+
+    app.config["APP_MODE"] = "nba_cup"
+    cup_resp = client.get("/classement")
+    assert b"5.0" in cup_resp.data
+    assert b"6.0" not in cup_resp.data
+
+
 def test_dashboard_orders_games_most_recent_first(app, client, player):
     series = Series(season=2025, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
     db.session.add(series)

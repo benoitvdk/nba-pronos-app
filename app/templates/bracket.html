@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Bracket{% endblock %}
 {% block content %}
+  {% set cup_mode = config.APP_MODE == 'nba_cup' %}
   <div class="card">
-    <h3>Pronostics d'avant-playoffs</h3>
+    <h3>{{ "Pronostics d'avant-Cup" if cup_mode else "Pronostics d'avant-playoffs" }}</h3>
     {% if locked %}
-      <p><span class="pill locked">🔒 Playoffs commencés — bracket verrouillé</span></p>
+      <p><span class="pill locked">🔒 {{ 'NBA Cup commencée' if cup_mode else 'Playoffs commencés' }} — bracket verrouillé</span></p>
     {% else %}
-      <p class="muted">Un seul pronostic par catégorie, à valider avant le premier match des playoffs.</p>
+      <p class="muted">Un seul pronostic par catégorie, à valider avant le premier match {{ 'de la NBA Cup' if cup_mode else 'des playoffs' }}.</p>
     {% endif %}
 
     <form method="post">

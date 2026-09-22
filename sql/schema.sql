@@ -20,13 +20,14 @@ CREATE TABLE scoring_config (
 
 
 CREATE TABLE series (
-	id SERIAL NOT NULL, 
-	season INTEGER, 
-	round VARCHAR(32) NOT NULL, 
-	team_a VARCHAR(64) NOT NULL, 
-	team_b VARCHAR(64) NOT NULL, 
-	winner_odds JSON, 
-	score_odds JSON, 
+	id SERIAL NOT NULL,
+	season INTEGER,
+	round VARCHAR(32) NOT NULL,
+	team_a VARCHAR(64) NOT NULL,
+	team_b VARCHAR(64) NOT NULL,
+	winner_odds JSON,
+	score_odds JSON,
+	group_name VARCHAR(64),
 	PRIMARY KEY (id)
 );
 

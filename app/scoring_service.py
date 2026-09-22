@@ -5,6 +5,7 @@ refreshes the values)."""
 from app.extensions import db
 from app.models import BracketPrediction, Game, Prediction, ScoringConfig, Series
 from app.scoring import (
+    games_to_win_for_round,
     score_bracket,
     score_game_winner,
     score_series_score,
@@ -23,7 +24,7 @@ def load_config(engine):
 def _series_status(series):
     wins_a = sum(1 for g in series.games if g.result == "team_a")
     wins_b = sum(1 for g in series.games if g.result == "team_b")
-    return series_status(wins_a, wins_b)
+    return series_status(wins_a, wins_b, games_to_win=games_to_win_for_round(series.round))
 
 
 def score_game_predictions(engine="classic"):

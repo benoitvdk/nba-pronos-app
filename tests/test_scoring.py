@@ -1,6 +1,8 @@
 import pytest
 
 from app.scoring import (
+    games_to_win_for_round,
+    is_cup_round,
     score_game_winner,
     score_series_winner,
     score_series_score,
@@ -144,3 +146,39 @@ def test_series_status_finished_sweep():
     assert status["finished"] is True
     assert status["winner"] == "team_b"
     assert status["score"] == "4-0"
+
+
+# --- NBA Cup: is_cup_round / games_to_win_for_round -----------------------
+
+@pytest.mark.parametrize(
+    "round_name,expected",
+    [
+        ("cup_group", True),
+        ("cup_quarterfinal", True),
+        ("cup_semifinal", True),
+        ("cup_final", True),
+        ("first_round", False),
+        ("conf_semis", False),
+        ("finals", False),
+    ],
+)
+def test_is_cup_round(round_name, expected):
+    assert is_cup_round(round_name) is expected
+
+
+def test_games_to_win_for_round_cup_is_single_game():
+    assert games_to_win_for_round("cup_group") == 1
+    assert games_to_win_for_round("cup_quarterfinal") == 1
+
+
+def test_games_to_win_for_round_playoffs_is_best_of_seven():
+    assert games_to_win_for_round("first_round") == 4
+    assert games_to_win_for_round("finals") == 4
+
+
+def test_series_status_cup_round_finished_after_one_game():
+    # A Cup "series" is a single game: one win for either side finishes it.
+    status = series_status(wins_a=1, wins_b=0, games_to_win=games_to_win_for_round("cup_quarterfinal"))
+    assert status["finished"] is True
+    assert status["winner"] == "team_a"
+    assert status["score"] == "1-0"
