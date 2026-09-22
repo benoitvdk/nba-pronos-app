@@ -41,13 +41,22 @@
 
   {% for row in series_rows %}
     {% set series = row.series %}
-    <div class="card series-card">
-      <div class="series-head">
+    {# Same collapse rule as the dashboard (see home.html): finished series
+       start collapsed, everything else starts open, and a manual
+       expand/collapse is remembered per browser via localStorage. #}
+    <details class="card series-card" data-series-id="{{ series.id }}" {{ 'open' if not row.finished }}>
+      <summary class="series-head">
         <div>
           <span class="round-tag">{{ series.round | replace('_', ' ') | title }}</span>
           <div class="matchup">{{ series.team_a }}<span class="vs">vs</span>{{ series.team_b }}</div>
         </div>
-      </div>
+        <div class="series-head-right">
+          {% if row.finished %}
+            <span class="pill done">Terminée</span>
+          {% endif %}
+          <span class="chevron" aria-hidden="true">▸</span>
+        </div>
+      </summary>
 
       <div class="section">
         <div class="section-label">Pronostic de série</div>
@@ -107,6 +116,26 @@
           {% endfor %}
         </div>
       {% endif %}
-    </div>
+    </details>
   {% endfor %}
+
+  {% if series_rows %}
+    <script>
+      // Same persistence as the dashboard: remember what this player
+      // manually opened/closed here, independently of the dashboard's own
+      // choices (different key namespace would be needed for that - not
+      // worth it, series ids are shared and closing one here also closes
+      // it on the dashboard next visit, which is the expected behavior).
+      document.querySelectorAll("details.series-card[data-series-id]").forEach((el) => {
+        const key = "series-open-" + el.dataset.seriesId;
+        try {
+          const stored = localStorage.getItem(key);
+          if (stored !== null) el.open = stored === "1";
+        } catch (e) { /* localStorage unavailable (private mode, etc.) */ }
+        el.addEventListener("toggle", () => {
+          try { localStorage.setItem(key, el.open ? "1" : "0"); } catch (e) {}
+        });
+      });
+    </script>
+  {% endif %}
 {% endblock %}

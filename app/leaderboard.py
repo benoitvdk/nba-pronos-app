@@ -11,6 +11,7 @@ from app.auth import login_required
 from app.bracket import CATEGORIES
 from app.extensions import db
 from app.models import BracketPrediction, Game, Player, Prediction, Series
+from app.scoring import series_status
 from app.time_utils import ensure_aware_utc
 
 bp = Blueprint("leaderboard", __name__)
@@ -95,6 +96,9 @@ def player_profile(player_id):
     for series in series_list:
         series_games = games_by_series.get(series.id, [])
         started = any(gm.result is not None for gm in series_games)
+        wins_a = sum(1 for gm in series_games if gm.result == "team_a")
+        wins_b = sum(1 for gm in series_games if gm.result == "team_b")
+        finished = series_status(wins_a, wins_b)["finished"]
         series_visible = is_self or started
 
         winner_pred = preds_by_series.get((series.id, "series_winner"))
@@ -117,6 +121,7 @@ def player_profile(player_id):
         series_rows.append(
             {
                 "series": series,
+                "finished": finished,
                 "winner_prediction": winner_pred if series_visible else None,
                 "winner_hidden": winner_pred is not None and not series_visible,
                 "score_prediction": score_pred if series_visible else None,
