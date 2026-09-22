@@ -205,10 +205,10 @@ details.series-card[open] .chevron { transform: rotate(90deg); }
 }
 .series-card .series-points { display: flex; justify-content: flex-end; margin-top: 0.5rem; }
 
-/* --- Team color accents (dot on team names, left border on prediction
-   buttons) - see app/team_colors.py. Kept as small accents rather than
-   full backgrounds so they never compete with the correct/wrong colors
-   above. --- */
+/* --- Team color accents: dot on team names (matchup header), full fill
+   on prediction buttons (see app/team_colors.py team_color/team_text_color).
+   Text color is computed per team for contrast rather than hardcoded
+   white, since some team colors are pale. --- */
 .team-dot {
   display: inline-block;
   width: 0.5rem;
@@ -218,7 +218,13 @@ details.series-card[open] .chevron { transform: rotate(90deg); }
   vertical-align: middle;
   flex-shrink: 0;
 }
-form.inline button[style*="border-left"] { border-left-width: 4px; border-left-style: solid; padding-left: 0.8rem; }
+/* Matches "background:" (flat colors) and "background-color:" both -
+   inline style always starts with one of these for a team-colored button
+   (see app/team_colors.py: a two-tone team's fill is a CSS gradient,
+   which only "background" - not "background-color" - can render). */
+form.inline button[style*="background"] { border: none; }
+form.inline button.secondary[style*="background"] { opacity: 0.85; }
+form.inline button[style*="background"]:hover { filter: brightness(0.92); }
 .series-card .round-tag {
   display: inline-block;
   font-size: 0.7rem;

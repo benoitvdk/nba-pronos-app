@@ -14,7 +14,9 @@
       <div class="series-head">
         <div>
           <span class="round-tag">{{ series.round | replace('_', ' ') | title }}</span>
-          <div class="matchup">{{ series.team_a }}<span class="vs">vs</span>{{ series.team_b }}</div>
+          <div class="matchup">
+            <span class="team-dot" style="background:{{ series.team_a | team_color }}"></span>{{ series.team_a }}<span class="vs">vs</span><span class="team-dot" style="background:{{ series.team_b | team_color }}"></span>{{ series.team_b }}
+          </div>
         </div>
         {% if row.finished %}
           <span class="pill locked">Terminée</span>
@@ -34,8 +36,8 @@
           {% if not row.started %}
             <form class="inline" method="post" action="{{ url_for('predictions.predict_series_winner', series_id=series.id) }}">
               <span class="muted">Changer :</span>
-              <button type="submit" name="side" value="team_a" class="secondary">{{ series.team_a }}</button>
-              <button type="submit" name="side" value="team_b" class="secondary">{{ series.team_b }}</button>
+              <button type="submit" name="side" value="team_a" class="secondary" style="background:{{ series.team_a | team_color }}; color:{{ series.team_a | team_text_color }}">{{ series.team_a }}</button>
+              <button type="submit" name="side" value="team_b" class="secondary" style="background:{{ series.team_b | team_color }}; color:{{ series.team_b | team_text_color }}">{{ series.team_b }}</button>
             </form>
           {% endif %}
         {% elif row.started %}
@@ -43,8 +45,8 @@
         {% else %}
           <form class="inline" method="post" action="{{ url_for('predictions.predict_series_winner', series_id=series.id) }}">
             <span class="muted">Vainqueur de la série :</span>
-            <button type="submit" name="side" value="team_a">{{ series.team_a }}</button>
-            <button type="submit" name="side" value="team_b">{{ series.team_b }}</button>
+            <button type="submit" name="side" value="team_a" style="background:{{ series.team_a | team_color }}; color:{{ series.team_a | team_text_color }}">{{ series.team_a }}</button>
+            <button type="submit" name="side" value="team_b" style="background:{{ series.team_b | team_color }}; color:{{ series.team_b | team_text_color }}">{{ series.team_b }}</button>
           </form>
         {% endif %}
 
@@ -73,7 +75,7 @@
           {% if not row.started %}
             <form class="inline" method="post" action="{{ url_for('predictions.predict_series_score', series_id=series.id) }}">
               <span class="muted">Changer :</span>
-              <select name="side">
+              <select name="side" data-color-a="{{ series.team_a | team_color }}" data-color-b="{{ series.team_b | team_color }}" data-text-a="{{ series.team_a | team_text_color }}" data-text-b="{{ series.team_b | team_text_color }}">
                 <option value="team_a">{{ series.team_a }}</option>
                 <option value="team_b">{{ series.team_b }}</option>
               </select>
@@ -83,7 +85,7 @@
                   <option value="{{ s }}">{{ s }}</option>
                 {% endfor %}
               </select>
-              <button type="submit" class="secondary">Valider</button>
+              <button type="submit" class="secondary score-submit">Valider</button>
             </form>
           {% endif %}
         {% elif row.started %}
@@ -91,7 +93,7 @@
         {% else %}
           <form class="inline" method="post" action="{{ url_for('predictions.predict_series_score', series_id=series.id) }}">
             <span class="muted">Score exact :</span>
-            <select name="side">
+            <select name="side" data-color-a="{{ series.team_a | team_color }}" data-color-b="{{ series.team_b | team_color }}" data-text-a="{{ series.team_a | team_text_color }}" data-text-b="{{ series.team_b | team_text_color }}">
               <option value="team_a">{{ series.team_a }}</option>
               <option value="team_b">{{ series.team_b }}</option>
             </select>
@@ -101,7 +103,7 @@
                 <option value="{{ s }}">{{ s }}</option>
               {% endfor %}
             </select>
-            <button type="submit">Valider</button>
+            <button type="submit" class="score-submit">Valider</button>
           </form>
         {% endif %}
 
@@ -145,14 +147,14 @@
                     </span>
                     {% if gr.open %}
                       <form class="inline" method="post" action="{{ url_for('predictions.predict_game', game_id=game.id) }}">
-                        <button type="submit" name="side" value="team_a" class="secondary">{{ game.team_a }}</button>
-                        <button type="submit" name="side" value="team_b" class="secondary">{{ game.team_b }}</button>
+                        <button type="submit" name="side" value="team_a" class="secondary" style="background:{{ game.team_a | team_color }}; color:{{ game.team_a | team_text_color }}">{{ game.team_a }}</button>
+                        <button type="submit" name="side" value="team_b" class="secondary" style="background:{{ game.team_b | team_color }}; color:{{ game.team_b | team_text_color }}">{{ game.team_b }}</button>
                       </form>
                     {% endif %}
                   {% elif gr.open %}
                     <form class="inline" method="post" action="{{ url_for('predictions.predict_game', game_id=game.id) }}">
-                      <button type="submit" name="side" value="team_a" class="secondary">{{ game.team_a }}</button>
-                      <button type="submit" name="side" value="team_b" class="secondary">{{ game.team_b }}</button>
+                      <button type="submit" name="side" value="team_a" class="secondary" style="background:{{ game.team_a | team_color }}; color:{{ game.team_a | team_text_color }}">{{ game.team_a }}</button>
+                      <button type="submit" name="side" value="team_b" class="secondary" style="background:{{ game.team_b | team_color }}; color:{{ game.team_b | team_text_color }}">{{ game.team_b }}</button>
                     </form>
                   {% elif not game.result %}
                     <span class="pill locked">Pronostic fermé</span>
@@ -183,4 +185,27 @@
       {% endif %}
     </div>
   {% endfor %}
+
+  {% if series_rows %}
+    <script>
+      // Fills the "Valider" (score) button with whichever team is currently
+      // selected in the "side" dropdown next to it - the series/game
+      // prediction buttons get their team color straight from team_color()/
+      // team_text_color() at render time (see the inline style= above), but
+      // this one is a single button shared by both teams via a <select>, so
+      // it has to follow the selection instead.
+      document.querySelectorAll(".score-submit").forEach((btn) => {
+        const form = btn.closest("form");
+        const sideSelect = form && form.querySelector("select[name='side']");
+        if (!sideSelect) return;
+        const applyColor = () => {
+          const isA = sideSelect.value === "team_a";
+          btn.style.background = isA ? sideSelect.dataset.colorA : sideSelect.dataset.colorB;
+          btn.style.color = isA ? sideSelect.dataset.textA : sideSelect.dataset.textB;
+        };
+        sideSelect.addEventListener("change", applyColor);
+        applyColor();
+      });
+    </script>
+  {% endif %}
 {% endblock %}
