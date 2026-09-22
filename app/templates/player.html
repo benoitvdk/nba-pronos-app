@@ -50,7 +50,7 @@
           <div>
             <span class="round-tag">{{ series.round | replace('_', ' ') | title }}</span>
             <div class="matchup">
-              <span class="team-dot" style="background:{{ series.team_a | team_color }}"></span>{{ series.team_a | team_short_name }}<span class="vs">vs</span><span class="team-dot" style="background:{{ series.team_b | team_color }}"></span>{{ series.team_b | team_short_name }}
+              <span class="team-dot" style="background:{{ series.team_a | team_color }}"></span>{{ series.team_a }}<span class="vs">vs</span><span class="team-dot" style="background:{{ series.team_b | team_color }}"></span>{{ series.team_b }}
             </div>
           </div>
           <div class="series-head-right">
