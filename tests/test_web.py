@@ -168,6 +168,91 @@ def test_predict_updates_existing_prediction_instead_of_duplicating(app, client,
     assert preds[0].predicted_value == "team_b"
 
 
+# --- changing an already-submitted prediction (while still open) ----------
+
+def test_dashboard_offers_to_change_open_game_prediction(app, client, player):
+    series = Series(season=2025, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
+    db.session.add(series)
+    db.session.commit()
+    game = Game(series_id=series.id, team_a="Boston Celtics", team_b="Denver Nuggets", game_date=FUTURE)
+    db.session.add(game)
+    db.session.commit()
+    db.session.add(
+        Prediction(player_id=player.id, game_id=game.id, prediction_type="game_winner", predicted_value="team_a")
+    )
+    db.session.commit()
+
+    _login(client, player)
+    resp = client.get("/")
+
+    assert f'/predict/game/{game.id}'.encode() in resp.data
+
+
+def test_dashboard_hides_change_form_for_locked_game_prediction(app, client, player):
+    series = Series(season=2025, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
+    db.session.add(series)
+    db.session.commit()
+    game = Game(series_id=series.id, team_a="Boston Celtics", team_b="Denver Nuggets", game_date=PAST, result="team_a")
+    db.session.add(game)
+    db.session.commit()
+    db.session.add(
+        Prediction(
+            player_id=player.id, game_id=game.id, prediction_type="game_winner", predicted_value="team_a",
+            is_correct=True, points_earned=1,
+        )
+    )
+    db.session.commit()
+
+    _login(client, player)
+    resp = client.get("/")
+
+    assert f'/predict/game/{game.id}'.encode() not in resp.data
+
+
+def test_dashboard_offers_to_change_open_series_predictions(app, client, player):
+    series = Series(season=2025, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
+    db.session.add(series)
+    db.session.commit()
+    db.session.add_all(
+        [
+            Prediction(
+                player_id=player.id, series_id=series.id, prediction_type="series_winner", predicted_value="team_a",
+            ),
+            Prediction(
+                player_id=player.id, series_id=series.id, prediction_type="series_score",
+                predicted_value="team_a:4-2",
+            ),
+        ]
+    )
+    db.session.commit()
+
+    _login(client, player)
+    resp = client.get("/")
+
+    assert f'/predict/series/{series.id}/winner'.encode() in resp.data
+    assert f'/predict/series/{series.id}/score'.encode() in resp.data
+
+
+def test_dashboard_hides_change_form_for_started_series_predictions(app, client, player):
+    series = Series(season=2025, round="finals", team_a="Boston Celtics", team_b="Denver Nuggets")
+    db.session.add(series)
+    db.session.commit()
+    game = Game(series_id=series.id, team_a="Boston Celtics", team_b="Denver Nuggets", game_date=PAST, result="team_a")
+    db.session.add(game)
+    db.session.add(
+        Prediction(
+            player_id=player.id, series_id=series.id, prediction_type="series_winner", predicted_value="team_a",
+            is_correct=True, points_earned=1,
+        )
+    )
+    db.session.commit()
+
+    _login(client, player)
+    resp = client.get("/")
+
+    assert f'/predict/series/{series.id}/winner'.encode() not in resp.data
+
+
 # --- leaderboard -----------------------------------------------------------
 
 def test_leaderboard_sums_prediction_and_bracket_points(app, client, player):

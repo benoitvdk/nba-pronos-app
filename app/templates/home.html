@@ -10,37 +10,20 @@
 
   {% for row in series_rows %}
     {% set series = row.series %}
-    {# Finished series start collapsed (nothing left to predict there), the
-       current/upcoming ones start open - keeps the page light to render
-       once a full playoffs' worth of series have piled up. The player's
-       own manual expand/collapse is then remembered across visits via
-       localStorage (see the script after the loop). #}
-    <details class="card series-card" data-series-id="{{ series.id }}" {{ 'open' if not row.finished }}>
-      <summary class="series-head">
-        <div class="series-head-top">
-          <div>
-            <span class="round-tag">{{ series.round | replace('_', ' ') | title }}</span>
-            <div class="matchup">
-              <span class="team-dot" style="background:{{ series.team_a | team_color }}"></span>{{ series.team_a }}<span class="vs">vs</span><span class="team-dot" style="background:{{ series.team_b | team_color }}"></span>{{ series.team_b }}
-            </div>
-          </div>
-          <div class="series-head-right">
-            {% if row.finished %}
-              <span class="pill locked">Terminée</span>
-            {% elif row.started %}
-              <span class="pill done">En cours</span>
-            {% else %}
-              <span class="pill upcoming">À venir</span>
-            {% endif %}
-            <span class="chevron" aria-hidden="true">▸</span>
-          </div>
+    <div class="card series-card">
+      <div class="series-head">
+        <div>
+          <span class="round-tag">{{ series.round | replace('_', ' ') | title }}</span>
+          <div class="matchup">{{ series.team_a }}<span class="vs">vs</span>{{ series.team_b }}</div>
         </div>
-        {% if row.started %}
-          <div class="series-points">
-            <span class="pill points">{{ '%.1f' | format(row.total_points) }} pt</span>
-          </div>
+        {% if row.finished %}
+          <span class="pill locked">Terminée</span>
+        {% elif row.started %}
+          <span class="pill done">En cours</span>
+        {% else %}
+          <span class="pill upcoming">À venir</span>
         {% endif %}
-      </summary>
+      </div>
 
       <div class="section">
         <div class="section-label">Pronostic de série</div>
@@ -48,13 +31,20 @@
         {# --- series winner prediction --- #}
         {% if row.winner_prediction %}
           <p><span class="pill {{ 'done' if row.winner_prediction.is_correct else ('locked' if row.winner_prediction.is_correct is none else 'wrong') }}">Vainqueur : {{ series.team_a if row.winner_prediction.predicted_value == 'team_a' else series.team_b }}</span></p>
+          {% if not row.started %}
+            <form class="inline" method="post" action="{{ url_for('predictions.predict_series_winner', series_id=series.id) }}">
+              <span class="muted">Changer :</span>
+              <button type="submit" name="side" value="team_a" class="secondary">{{ series.team_a }}</button>
+              <button type="submit" name="side" value="team_b" class="secondary">{{ series.team_b }}</button>
+            </form>
+          {% endif %}
         {% elif row.started %}
           <p class="muted">Série commencée — pronostic vainqueur fermé.</p>
         {% else %}
           <form class="inline" method="post" action="{{ url_for('predictions.predict_series_winner', series_id=series.id) }}">
             <span class="muted">Vainqueur de la série :</span>
-            <button type="submit" name="side" value="team_a" style="border-left: 4px solid {{ series.team_a | team_color }}">{{ series.team_a }}</button>
-            <button type="submit" name="side" value="team_b" style="border-left: 4px solid {{ series.team_b | team_color }}">{{ series.team_b }}</button>
+            <button type="submit" name="side" value="team_a">{{ series.team_a }}</button>
+            <button type="submit" name="side" value="team_b">{{ series.team_b }}</button>
           </form>
         {% endif %}
 
@@ -80,6 +70,22 @@
         {% if row.score_prediction %}
           {% set parts = row.score_prediction.predicted_value.split(':') %}
           <p><span class="pill {{ 'done' if row.score_prediction.is_correct else ('locked' if row.score_prediction.is_correct is none else 'wrong') }}">Score : {{ series.team_a if parts[0] == 'team_a' else series.team_b }} {{ parts[1] }}</span></p>
+          {% if not row.started %}
+            <form class="inline" method="post" action="{{ url_for('predictions.predict_series_score', series_id=series.id) }}">
+              <span class="muted">Changer :</span>
+              <select name="side">
+                <option value="team_a">{{ series.team_a }}</option>
+                <option value="team_b">{{ series.team_b }}</option>
+              </select>
+              <span class="muted">gagne</span>
+              <select name="score">
+                {% for s in valid_scores %}
+                  <option value="{{ s }}">{{ s }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="secondary">Valider</button>
+            </form>
+          {% endif %}
         {% elif row.started %}
           <p class="muted">Série commencée — pronostic score fermé.</p>
         {% else %}
@@ -137,10 +143,16 @@
                       Pronostic : {{ game.team_a if gr.prediction.predicted_value == 'team_a' else game.team_b }}
                       {% if gr.prediction.is_correct is not none %}{{ '✓' if gr.prediction.is_correct else '✗' }}{% endif %}
                     </span>
+                    {% if gr.open %}
+                      <form class="inline" method="post" action="{{ url_for('predictions.predict_game', game_id=game.id) }}">
+                        <button type="submit" name="side" value="team_a" class="secondary">{{ game.team_a }}</button>
+                        <button type="submit" name="side" value="team_b" class="secondary">{{ game.team_b }}</button>
+                      </form>
+                    {% endif %}
                   {% elif gr.open %}
                     <form class="inline" method="post" action="{{ url_for('predictions.predict_game', game_id=game.id) }}">
-                      <button type="submit" name="side" value="team_a" class="secondary" style="border-left: 4px solid {{ game.team_a | team_color }}">{{ game.team_a }}</button>
-                      <button type="submit" name="side" value="team_b" class="secondary" style="border-left: 4px solid {{ game.team_b | team_color }}">{{ game.team_b }}</button>
+                      <button type="submit" name="side" value="team_a" class="secondary">{{ game.team_a }}</button>
+                      <button type="submit" name="side" value="team_b" class="secondary">{{ game.team_b }}</button>
                     </form>
                   {% elif not game.result %}
                     <span class="pill locked">Pronostic fermé</span>
@@ -169,24 +181,6 @@
           {% endfor %}
         </div>
       {% endif %}
-    </details>
+    </div>
   {% endfor %}
-
-  {% if series_rows %}
-    <script>
-      // Remember which series the player opened/closed by hand, so a
-      // reload (or their next visit) doesn't re-collapse something they
-      // just expanded to fill in a prediction, and vice versa.
-      document.querySelectorAll("details.series-card[data-series-id]").forEach((el) => {
-        const key = "series-open-" + el.dataset.seriesId;
-        try {
-          const stored = localStorage.getItem(key);
-          if (stored !== null) el.open = stored === "1";
-        } catch (e) { /* localStorage unavailable (private mode, etc.) */ }
-        el.addEventListener("toggle", () => {
-          try { localStorage.setItem(key, el.open ? "1" : "0"); } catch (e) {}
-        });
-      });
-    </script>
-  {% endif %}
 {% endblock %}
