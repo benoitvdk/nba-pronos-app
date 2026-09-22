@@ -50,7 +50,7 @@
           <div>
             <span class="round-tag">{{ series.round | replace('_', ' ') | title }}</span>
             <div class="matchup">
-              <span class="team-dot" style="background:{{ series.team_a | team_color }}"></span>{{ series.team_a }}<span class="vs">vs</span><span class="team-dot" style="background:{{ series.team_b | team_color }}"></span>{{ series.team_b }}
+              <span class="team-dot" style="background:{{ series.team_a | team_color }}"></span>{{ series.team_a | team_short_name }}<span class="vs">vs</span><span class="team-dot" style="background:{{ series.team_b | team_color }}"></span>{{ series.team_b | team_short_name }}
             </div>
           </div>
           <div class="series-head-right">
@@ -75,7 +75,7 @@
         {% elif row.winner_prediction %}
           <p>
             <span class="pill {{ 'locked' if row.winner_prediction.is_correct is none else ('done' if row.winner_prediction.is_correct else 'wrong') }}">
-              Vainqueur : {{ series.team_a if row.winner_prediction.predicted_value == 'team_a' else series.team_b }}
+              Vainqueur : {{ (series.team_a if row.winner_prediction.predicted_value == 'team_a' else series.team_b) | team_short_name }}
               {% if row.winner_prediction.is_correct is not none %}
                 {{ '✓' if row.winner_prediction.is_correct else '✗' }} {{ '%.1f' | format(row.winner_prediction.points_earned or 0) }} pt
               {% endif %}
@@ -91,7 +91,7 @@
           {% set parts = row.score_prediction.predicted_value.split(':') %}
           <p>
             <span class="pill {{ 'locked' if row.score_prediction.is_correct is none else ('done' if row.score_prediction.is_correct else 'wrong') }}">
-              Score : {{ series.team_a if parts[0] == 'team_a' else series.team_b }} {{ parts[1] }}
+              Score : {{ (series.team_a if parts[0] == 'team_a' else series.team_b) | team_short_name }} {{ parts[1] }}
               {% if row.score_prediction.is_correct is not none %}
                 {{ '✓' if row.score_prediction.is_correct else '✗' }} {{ '%.1f' | format(row.score_prediction.points_earned or 0) }} pt
               {% endif %}
@@ -117,7 +117,7 @@
                   <span class="pill locked">🔒 Pas encore révélé</span>
                 {% else %}
                   <span class="pill {{ 'locked' if gr.prediction.is_correct is none else ('done' if gr.prediction.is_correct else 'wrong') }}">
-                    {{ game.team_a if gr.prediction.predicted_value == 'team_a' else game.team_b }}
+                    {{ (game.team_a if gr.prediction.predicted_value == 'team_a' else game.team_b) | team_short_name }}
                     {% if gr.prediction.is_correct is not none %}
                       {{ '✓' if gr.prediction.is_correct else '✗' }} {{ '%.1f' | format(gr.prediction.points_earned or 0) }} pt
                     {% endif %}

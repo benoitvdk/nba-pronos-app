@@ -128,7 +128,7 @@ MIN_TEXT_CONTRAST = 3.0
 TEAM_STYLE_OVERRIDES = {
     "New York Knicks": ("#FF671F", "#006BB6"),                  # fill/text swapped
     "Philadelphia 76ers": (("#006BB6", "#E4002B"), "#FFFFFF"),  # two-tone blue/red fill, white text
-    "Detroit Pistons": (("#C8102E", "#001F3F"), "#FFFFFF"),     # two-tone red/navy fill, white text
+    "Detroit Pistons": (("#C8102E", "#003DA5"), "#FFFFFF"),     # two-tone red/blue fill, white text
     "Indiana Pacers": ("#FDBB30", "#002D62"),                   # was navy fill -> yellow fill, navy text
     "Charlotte Hornets": ("#00778C", "#1D1160"),                # fill/text swapped
     "Phoenix Suns": ("#E56020", "#1D1160"),                     # fill/text swapped
