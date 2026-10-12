@@ -73,9 +73,11 @@ python -m scripts.ingest --season 2026   # real 2027 playoffs, once they start
 
 A GitHub Actions workflow (`.github/workflows/ingest.yml`) is ready to run
 this automatically, for free, on a public repo: game results every hour,
-and results + odds once a day (08:00 UTC) to stay under the
-the-odds-api.com free quota (500 credits/month, 1 credit per call with one
-region and one market). Manual runs (`workflow_dispatch`) also fetch odds.
+and results + odds 6 times a day (8:00, 12:00, 16:00, 18:00, 20:00 and
+21:00 Paris summer time, i.e. 06, 10, 14, 16, 18 and 19 UTC; one hour
+earlier in Paris during winter time) to stay under the the-odds-api.com
+free quota (500 credits/month, 1 credit per call with one region and one
+market, so about 186 credits/month). Manual runs (`workflow_dispatch`) also fetch odds.
 An odds API failure (invalid key, exhausted quota) only logs a warning and
 does not fail the job. You just need to add `DATABASE_URL`,
 `BALLDONTLIE_API_KEY` and `ODDS_API_KEY` to the GitHub repo secrets

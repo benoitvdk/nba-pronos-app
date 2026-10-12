@@ -2,11 +2,11 @@ name: NBA ingestion (results + odds)
 
 on:
   schedule:
-    # Hourly: game results only (balldontlie, free tier 5 req/min).
-    - cron: "5 * * * *"
-    # Daily at 08:00 UTC: results + odds (the-odds-api.com free tier is
-    # 500 credits/month, so odds are fetched once a day to stay under quota).
-    - cron: "0 8 * * *"
+    # Hourly at :55: game results only (skips the hours covered by the odds runs).
+    - cron: "55 0-4,6-8,10-12,14,16,19-23 * * *"
+    # Results + odds at 7:55, 11:55, 15:55, 17:55, 19:55 and 20:55 Paris
+    # summer time (UTC+2). ~186 credits/month, under the 500 free quota.
+    - cron: "55 5,9,13,15,17,18 * * *"
   # Manual runs always fetch odds too.
   workflow_dispatch: {}
 
@@ -29,7 +29,7 @@ jobs:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           # Skip odds on the hourly schedule; fetch them on the daily one
           # and on manual runs.
-          SKIP_ODDS: ${{ github.event.schedule == '5 * * * *' && '--skip-odds' || '' }}
+          SKIP_ODDS: ${{ github.event.schedule == '55 0-4,6-8,10-12,14,16,19-23 * * *' && '--skip-odds' || '' }}
         run: python -m scripts.ingest --season 2026 $SKIP_ODDS
 
       - name: Run scoring
