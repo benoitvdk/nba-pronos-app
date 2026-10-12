@@ -51,7 +51,7 @@ INSERT INTO series (season, round, team_a, team_b)
 VALUES (2025, 'finals', 'New York Knicks', 'San Antonio Spurs');
 ```
 
-Team names must be written exactly as in balldontlie/theoddsapi (full
+Team names must be written exactly as in balldontlie/the-odds-api.com (full
 name, e.g. "Boston Celtics", not "BOS"). `season` follows the balldontlie
 convention: the **starting** year of the season (e.g. 2025 for the 2026
 NBA finals, played in June 2026 at the end of the 2025-26 season) —
@@ -72,14 +72,22 @@ python -m scripts.ingest --season 2026   # real 2027 playoffs, once they start
 ```
 
 A GitHub Actions workflow (`.github/workflows/ingest.yml`) is ready to run
-this automatically every hour, for free, on a public repo — you just need
-to add `DATABASE_URL`, `BALLDONTLIE_API_KEY` and `ODDS_API_KEY` to the
-GitHub repo secrets (Settings > Secrets and variables > Actions), and
-update `--season` in there when the time comes.
+this automatically, for free, on a public repo: game results every hour,
+and results + odds once a day (08:00 UTC) to stay under the
+the-odds-api.com free quota (500 credits/month, 1 credit per call with one
+region and one market). Manual runs (`workflow_dispatch`) also fetch odds.
+An odds API failure (invalid key, exhausted quota) only logs a warning and
+does not fail the job. You just need to add `DATABASE_URL`,
+`BALLDONTLIE_API_KEY` and `ODDS_API_KEY` to the GitHub repo secrets
+(Settings > Secrets and variables > Actions), and update `--season` in
+there when the time comes.
 
-Known limitation: theoddsapi.com only provides odds for upcoming/live
+Odds come from https://the-odds-api.com (not theoddsapi.com, a different
+provider whose keys start with `toa_` and are rejected by this client).
+
+Known limitation: the-odds-api.com only provides odds for upcoming/live
 games (no history on the free tier), so the odds part can only really be
-tested once the 2026 playoffs start.
+tested once the 2027 playoffs start.
 
 `/health` responds `{"status": "ok"}` once the server is running. The link
 shown by `add_player` (e.g. `http://127.0.0.1:5000/login/<code>`) logs in
