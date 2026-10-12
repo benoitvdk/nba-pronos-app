@@ -3,12 +3,15 @@ import os
 
 def _normalize_db_url(url):
     """Forces the psycopg2 driver (the one in requirements.txt), whatever
-    scheme was pasted: Neon's SQLAlchemy snippet gives "postgresql+psycopg://"
-    (psycopg 3, not installed) and some hosts give "postgres://" (rejected
-    by SQLAlchemy)."""
-    for prefix in ("postgresql+psycopg://", "postgres://"):
-        if url.startswith(prefix):
-            return "postgresql://" + url[len(prefix):]
+    was pasted in DATABASE_URL: Neon's SQLAlchemy snippet gives
+    "postgresql+psycopg://" (psycopg 3, not installed), some hosts give
+    "postgres://", and secrets sometimes carry stray spaces or quotes."""
+    url = url.strip().strip("'\"").strip()
+    if not url:
+        return url
+    scheme, sep, rest = url.partition("://")
+    if sep and scheme.lower().split("+")[0] in ("postgres", "postgresql"):
+        return "postgresql+psycopg2://" + rest
     return url
 
 
